@@ -1,0 +1,6 @@
+import request from '../utils/request'
+
+export const getUsers = () => request.get('/users')
+export const createUser = (data) => request.post('/users', data)
+export const updateUser = (id, data) => request.put(`/users/${id}`, data)
+export const changePassword = (data) => request.put('/users/me/password', data)
