@@ -11,6 +11,7 @@ const fieldMap = {
   owner: ['owner', '责任人'],
   borrower: ['borrower', '当前领用人', '领用人'],
   status: ['status', '使用状态', '状态'],
+  usage_notes: ['usage_notes', '仪器使用注意事项', '使用注意事项', '注意事项'],
   asset_code: ['asset_code', '固定资产编号', '资产编号'],
   calibration_status: ['calibration_status', '计量状态', '验证状态'],
   calibration_result: ['calibration_result', '计量结果', '校准结果'],

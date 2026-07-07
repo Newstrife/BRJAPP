@@ -16,6 +16,7 @@ const buildInstrumentPayload = (body) => ({
   borrower: body.borrower,
   asset_code: body.asset_code,
   status: body.status,
+  usage_notes: body.usage_notes,
   calibration_status: body.calibration_status,
   calibration_result: body.calibration_result,
   calibration_note: body.calibration_note,
@@ -36,8 +37,17 @@ const currentUser = (req) => {
   };
 };
 
+const isAdmin = (req) => currentUser(req).username === 'admin';
+const requireAdmin = (req, res) => {
+  if (isAdmin(req)) return true;
+  fail(res, '仅管理员可以操作');
+  return false;
+};
+
 exports.create = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const instrument = await Instrument.create(buildInstrumentPayload(req.body));
     success(res, instrument);
   } catch (err) {
@@ -47,6 +57,8 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const device = await Instrument.findByPk(req.params.id);
 
     if (!device) return fail(res, '设备不存在');
@@ -60,9 +72,7 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
   try {
-    const user = currentUser(req);
-
-    if (user.username !== 'admin') return fail(res, '仅管理员可以删除设备');
+    if (!requireAdmin(req, res)) return;
 
     const device = await Instrument.findByPk(req.params.id);
 
@@ -133,9 +143,8 @@ exports.returnDevice = async (req, res) => {
 
     const borrower = device.borrower || '';
     const isOwner = borrower && [user.nickname, user.username].filter(Boolean).includes(borrower);
-    const isAdmin = user.username === 'admin';
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin(req)) {
       return fail(res, `该设备由 ${borrower || '其他用户'} 领用，非本人不能归还`);
     }
 
@@ -160,6 +169,7 @@ exports.list = async (req, res) => {
 
 exports.importExcel = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
     if (!req.file) return fail(res, '请上传文件');
 
     const data = excel.parseExcel(req.file.path);
@@ -175,6 +185,8 @@ exports.importExcel = async (req, res) => {
 
 exports.exportExcel = async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const data = await service.list(req.query);
     excel.exportExcel(data, res);
   } catch (err) {

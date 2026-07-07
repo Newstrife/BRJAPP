@@ -22,7 +22,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="submit">新增账号</el-button>
-        <el-button :disabled="!selectedUser" @click="openEdit">编辑选中账号</el-button>
+        <el-button :disabled="!selectedUser" @click="openEdit()">编辑选中账号</el-button>
       </el-form-item>
     </el-form>
 
@@ -40,9 +40,17 @@
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" />
-      <el-table-column label="操作" width="100">
+      <el-table-column label="操作" width="160">
         <template #default="scope">
           <el-button size="small" @click="openEdit(scope.row)">编辑</el-button>
+          <el-button
+            size="small"
+            type="danger"
+            :disabled="scope.row.username === 'admin'"
+            @click="removeUser(scope.row)"
+          >
+            删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -76,8 +84,8 @@
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getUsers, createUser, updateUser } from '../api/user'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUsers, createUser, updateUser, deleteUser } from '../api/user'
 
 const users = ref([])
 const selectedUser = ref(null)
@@ -136,6 +144,28 @@ const saveEdit = async () => {
   ElMessage.success('账号已更新')
   editVisible.value = false
   await loadUsers()
+}
+
+const removeUser = async row => {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除账号「${row.username}」吗？`,
+      '删除确认',
+      {
+        type: 'warning',
+        confirmButtonText: '删除',
+        cancelButtonText: '取消'
+      }
+    )
+
+    await deleteUser(row.id)
+    ElMessage.success('账号已删除')
+    await loadUsers()
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error('删除账号失败', e)
+    }
+  }
 }
 
 onMounted(loadUsers)

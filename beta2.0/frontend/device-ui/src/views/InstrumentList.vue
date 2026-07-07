@@ -1,20 +1,46 @@
 <template>
   <div class="instrument-list">
-    <div class="toolbar">
-      <el-input v-model="query.name" placeholder="设备名称" style="width: 200px" clearable />
-      <el-button @click="loadData">搜索</el-button>
-      <el-button type="primary" @click="showAdd = true">新增</el-button>
-      <el-upload :show-file-list="false" :http-request="uploadExcel" accept=".xlsx,.xls">
-        <el-button>导入 Excel</el-button>
-      </el-upload>
-      <el-button @click="exportExcelFile">导出</el-button>
-    </div>
+    <el-form class="toolbar" :model="query" inline>
+      <el-form-item label="设备编号">
+        <el-input v-model="query.code" placeholder="设备编号" clearable />
+      </el-form-item>
+      <el-form-item label="设备名称">
+        <el-input v-model="query.name" placeholder="设备名称" clearable />
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+          <el-option label="空闲" value="idle" />
+          <el-option label="使用中" value="in_use" />
+          <el-option label="维修中" value="repair" />
+          <el-option label="报废" value="scrapped" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="注意事项">
+        <el-input v-model="query.usage_notes" placeholder="仪器使用注意事项" clearable />
+      </el-form-item>
+      <el-form-item label="位置">
+        <el-input v-model="query.location" placeholder="存放位置" clearable />
+      </el-form-item>
+      <el-form-item label="部门">
+        <el-input v-model="query.department" placeholder="所属部门" clearable />
+      </el-form-item>
+      <el-form-item>
+        <el-button @click="loadData">搜索</el-button>
+        <el-button @click="resetQuery">重置</el-button>
+        <el-button v-if="isAdmin" type="primary" @click="showAdd = true">新增</el-button>
+        <el-upload v-if="isAdmin" :show-file-list="false" :http-request="uploadExcel" accept=".xlsx,.xls">
+          <el-button>导入 Excel</el-button>
+        </el-upload>
+        <el-button v-if="isAdmin" @click="exportExcelFile">导出</el-button>
+      </el-form-item>
+    </el-form>
 
     <el-table :data="list" border @row-dblclick="openDetail">
       <el-table-column prop="code" label="设备编号" />
       <el-table-column prop="name" label="设备名称" />
       <el-table-column prop="model" label="型号规格" />
       <el-table-column prop="location" label="存放位置" />
+      <el-table-column prop="department" label="所属部门" />
       <el-table-column prop="owner" label="责任人" />
       <el-table-column prop="borrower" label="当前领用人" width="120">
         <template #default="scope">{{ scope.row.borrower || '-' }}</template>
@@ -35,7 +61,7 @@
           <el-tag v-else>已报废</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" :width="isAdmin ? 240 : 180">
+      <el-table-column label="操作" :width="isAdmin ? 300 : 180">
         <template #default="scope">
           <el-button size="small" :disabled="scope.row.status !== 'idle'" @click.stop="use(scope.row)">领用</el-button>
           <el-button size="small" :disabled="!canReturn(scope.row)" @click.stop="ret(scope.row)">归还</el-button>
@@ -64,32 +90,12 @@
         <el-descriptions-item label="计量结果">{{ detail.calibration_result || '-' }}</el-descriptions-item>
         <el-descriptions-item label="本次计量时间">{{ detail.last_calibration_date || '-' }}</el-descriptions-item>
         <el-descriptions-item label="下次计量时间">{{ detail.next_calibration_date || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="仪器使用注意事项" :span="2">{{ detail.usage_notes || '-' }}</el-descriptions-item>
         <el-descriptions-item label="计量说明" :span="2">{{ detail.calibration_note || '-' }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-divider />
-
-      <el-form :model="calibrationForm" label-width="120px">
-        <el-form-item label="计量结果">
-          <el-radio-group v-model="calibrationForm.calibration_result">
-            <el-radio-button label="合格" />
-            <el-radio-button label="不合格" />
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="本次计量时间">
-          <el-date-picker v-model="calibrationForm.last_calibration_date" type="date" placeholder="选择日期" />
-        </el-form-item>
-        <el-form-item label="下次计量时间">
-          <el-date-picker v-model="calibrationForm.next_calibration_date" type="date" placeholder="手动输入或选择日期" />
-        </el-form-item>
-        <el-form-item label="计量说明">
-          <el-input v-model="calibrationForm.calibration_note" type="textarea" :rows="3" placeholder="填写计量文字说明" />
-        </el-form-item>
-      </el-form>
-
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button type="primary" @click="saveCalibration">保存计量结果</el-button>
       </template>
     </el-dialog>
 
@@ -105,6 +111,9 @@
         <el-form-item label="责任人"><el-input v-model="editForm.owner" /></el-form-item>
         <el-form-item label="当前领用人"><el-input v-model="editForm.borrower" /></el-form-item>
         <el-form-item label="固定资产编号"><el-input v-model="editForm.asset_code" /></el-form-item>
+        <el-form-item label="仪器使用注意事项">
+          <el-input v-model="editForm.usage_notes" type="textarea" :rows="3" />
+        </el-form-item>
         <el-form-item label="使用状态">
           <el-select v-model="editForm.status">
             <el-option label="空闲" value="idle" />
@@ -139,6 +148,8 @@
         <el-button type="primary" @click="saveEdit">保存</el-button>
       </template>
     </el-dialog>
+
+    <CalibrationRecords />
   </div>
 </template>
 
@@ -156,9 +167,17 @@ import {
   updateInstrument
 } from '../api/instrument'
 import InstrumentForm from '../components/InstrumentForm.vue'
+import CalibrationRecords from '../components/CalibrationRecords.vue'
 
 const list = ref([])
-const query = ref({})
+const query = reactive({
+  code: '',
+  name: '',
+  status: '',
+  usage_notes: '',
+  location: '',
+  department: ''
+})
 const showAdd = ref(false)
 const detailVisible = ref(false)
 const editVisible = ref(false)
@@ -182,6 +201,7 @@ const editForm = reactive({
   borrower: '',
   asset_code: '',
   status: 'idle',
+  usage_notes: '',
   calibration_status: 'uncalibrated',
   calibration_result: '',
   calibration_note: '',
@@ -245,12 +265,22 @@ const toPayload = form => ({
 
 const loadData = async () => {
   try {
-    const res = await getList(query.value)
+    const res = await getList(query)
     list.value = Array.isArray(res) ? res : []
   } catch (e) {
     console.error('加载失败', e)
     list.value = []
   }
+}
+
+const resetQuery = async () => {
+  query.code = ''
+  query.name = ''
+  query.status = ''
+  query.usage_notes = ''
+  query.location = ''
+  query.department = ''
+  await loadData()
 }
 
 const handleFormSuccess = async () => {
@@ -281,6 +311,7 @@ const openEdit = row => {
     borrower: row.borrower || '',
     asset_code: row.asset_code || '',
     status: row.status || 'idle',
+    usage_notes: row.usage_notes || '',
     calibration_status: row.calibration_status || 'uncalibrated',
     calibration_result: row.calibration_result || '',
     calibration_note: row.calibration_note || '',
@@ -373,7 +404,7 @@ const uploadExcel = async ({ file }) => {
 
 const exportExcelFile = async () => {
   try {
-    const res = await exportExcel(query.value)
+    const res = await exportExcel(query)
     const url = URL.createObjectURL(new Blob([res]))
     const link = document.createElement('a')
     link.href = url
@@ -397,5 +428,6 @@ onMounted(loadData)
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 </style>

@@ -7,5 +7,6 @@ router.put('/me/password', ctrl.changePassword);
 router.get('/', requireAdmin, ctrl.list);
 router.post('/', requireAdmin, ctrl.create);
 router.put('/:id', requireAdmin, ctrl.update);
+router.delete('/:id', requireAdmin, ctrl.remove);
 
 module.exports = router;

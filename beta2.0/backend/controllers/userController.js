@@ -72,6 +72,21 @@ exports.update = async (req, res) => {
   }
 };
 
+exports.remove = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+
+    if (!user) return fail(res, '账号不存在');
+    if (user.username === 'admin') return fail(res, '不能删除默认管理员账号');
+    if (req.headers['x-user-name'] === user.username) return fail(res, '不能删除当前登录账号');
+
+    await user.destroy();
+    success(res, null);
+  } catch (err) {
+    fail(res, err.message);
+  }
+};
+
 exports.changePassword = async (req, res) => {
   try {
     const username = req.headers['x-user-name'];

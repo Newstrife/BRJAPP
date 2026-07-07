@@ -28,6 +28,9 @@
       <el-form-item label="固定资产编号" prop="asset_code">
         <el-input v-model="form.asset_code" placeholder="必填" />
       </el-form-item>
+      <el-form-item label="仪器使用注意事项" prop="usage_notes">
+        <el-input v-model="form.usage_notes" type="textarea" :rows="3" placeholder="填写使用注意事项" />
+      </el-form-item>
       <el-form-item label="使用状态" prop="status">
         <el-select v-model="form.status" placeholder="选择状态">
           <el-option label="空闲" value="idle" />
@@ -89,6 +92,7 @@ const form = reactive({
   department: '',
   owner: '',
   status: 'idle',
+  usage_notes: '',
   asset_code: '',
   calibration_status: 'uncalibrated',
   calibration_result: '',

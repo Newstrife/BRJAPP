@@ -8,12 +8,14 @@ const scheduler = require('./jobs/scheduler');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/wecom', require('./routes/wecomRoutes'));
 app.use('/wecom', require('./routes/wecomRoutes'));
 app.use('/api/instruments', require('./routes/instrumentRoutes'));
+app.use('/api/calibration-records', require('./routes/calibrationRecordRoutes'));
 
 sequelize.sync({ alter: true }).then(async () => {
   const [admin] = await User.findOrCreate({

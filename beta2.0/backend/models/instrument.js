@@ -56,6 +56,8 @@ const Instrument = sequelize.define('instrument', {
 
   calibration_note: DataTypes.TEXT,
 
+  usage_notes: DataTypes.TEXT,
+
   calibration_reminder_for_date: DataTypes.STRING,
 
   locked: {

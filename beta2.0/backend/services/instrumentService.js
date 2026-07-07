@@ -1,16 +1,24 @@
 const { Op } = require('sequelize');
 const Instrument = require('../models/instrument');
 
+const like = (value) => ({ [Op.like]: `%${value}%` });
+
 exports.create = (data) => Instrument.create(data);
 
 exports.list = async (query = {}) => {
   const where = {};
 
-  if (query.name) {
-    where.name = { [Op.like]: `%${query.name}%` };
-  }
+  if (query.code) where.code = like(query.code);
+  if (query.name) where.name = like(query.name);
+  if (query.status) where.status = query.status;
+  if (query.usage_notes) where.usage_notes = like(query.usage_notes);
+  if (query.location) where.location = like(query.location);
+  if (query.department) where.department = like(query.department);
 
-  return Instrument.findAll({ where });
+  return Instrument.findAll({
+    where,
+    order: [['id', 'DESC']]
+  });
 };
 
 exports.use = async (id) => {
