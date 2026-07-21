@@ -39,6 +39,7 @@ exports.list = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
+    if (!req.body.calibration_info) return fail(res, '请填写计量信息');
 
     const instrument = await Instrument.findByPk(req.body.instrument_id);
     if (!instrument) return fail(res, '设备不存在');
@@ -49,6 +50,7 @@ exports.create = async (req, res) => {
       instrument_code: instrument.code,
       instrument_name: instrument.name,
       result: req.body.result,
+      calibration_info: req.body.calibration_info,
       calibration_date: req.body.calibration_date,
       next_calibration_date: req.body.next_calibration_date,
       certificate_file: req.file ? req.file.path : '',
@@ -76,23 +78,23 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
+    if (!req.body.calibration_info) return fail(res, '请填写计量信息');
 
     const record = await CalibrationRecord.findByPk(req.params.id);
     if (!record) return fail(res, '计量记录不存在');
 
-    const nextData = {
-      instrument_id: req.body.instrument_id,
-      result: req.body.result,
-      calibration_date: req.body.calibration_date,
-      next_calibration_date: req.body.next_calibration_date
-    };
-
     const instrument = await Instrument.findByPk(req.body.instrument_id || record.instrument_id);
     if (!instrument) return fail(res, '设备不存在');
 
-    nextData.instrument_id = instrument.id;
-    nextData.instrument_code = instrument.code;
-    nextData.instrument_name = instrument.name;
+    const nextData = {
+      instrument_id: instrument.id,
+      instrument_code: instrument.code,
+      instrument_name: instrument.name,
+      result: req.body.result,
+      calibration_info: req.body.calibration_info,
+      calibration_date: req.body.calibration_date,
+      next_calibration_date: req.body.next_calibration_date
+    };
 
     if (req.file) {
       nextData.certificate_file = req.file.path;

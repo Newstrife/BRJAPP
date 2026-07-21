@@ -14,6 +14,11 @@ const CalibrationRecord = sequelize.define('calibration_record', {
   instrument_code: DataTypes.STRING,
   instrument_name: DataTypes.STRING,
   result: DataTypes.STRING,
+  calibration_info: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    defaultValue: ''
+  },
   calibration_date: DataTypes.DATEONLY,
   next_calibration_date: DataTypes.DATEONLY,
   certificate_file: DataTypes.STRING,

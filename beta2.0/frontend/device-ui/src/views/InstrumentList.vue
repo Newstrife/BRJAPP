@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="instrument-list">
     <el-form class="toolbar" :model="query" inline>
       <el-form-item label="设备编号">
@@ -6,14 +6,6 @@
       </el-form-item>
       <el-form-item label="设备名称">
         <el-input v-model="query.name" placeholder="设备名称" clearable />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="空闲" value="idle" />
-          <el-option label="使用中" value="in_use" />
-          <el-option label="维修中" value="repair" />
-          <el-option label="报废" value="scrapped" />
-        </el-select>
       </el-form-item>
       <el-form-item label="注意事项">
         <el-input v-model="query.usage_notes" placeholder="仪器使用注意事项" clearable />
@@ -42,9 +34,6 @@
       <el-table-column prop="location" label="存放位置" />
       <el-table-column prop="department" label="所属部门" />
       <el-table-column prop="owner" label="责任人" />
-      <el-table-column prop="borrower" label="当前领用人" width="120">
-        <template #default="scope">{{ scope.row.borrower || '-' }}</template>
-      </el-table-column>
       <el-table-column prop="next_calibration_date" label="下次计量时间" width="140" />
       <el-table-column label="计量状态" width="120">
         <template #default="scope">
@@ -53,18 +42,9 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="使用状态" width="100">
+      <el-table-column label="操作" :width="isAdmin ? 220 : 110">
         <template #default="scope">
-          <el-tag v-if="scope.row.status === 'idle'" type="success">空闲</el-tag>
-          <el-tag v-else-if="scope.row.status === 'in_use'" type="warning">使用中</el-tag>
-          <el-tag v-else-if="scope.row.status === 'repair'" type="danger">维修中</el-tag>
-          <el-tag v-else>已报废</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" :width="isAdmin ? 300 : 180">
-        <template #default="scope">
-          <el-button size="small" :disabled="scope.row.status !== 'idle'" @click.stop="use(scope.row)">领用</el-button>
-          <el-button size="small" :disabled="!canReturn(scope.row)" @click.stop="ret(scope.row)">归还</el-button>
+          <el-button size="small" @click.stop="openCalibrationRecords(scope.row)">计量记录</el-button>
           <el-button v-if="isAdmin" size="small" type="primary" @click.stop="openEdit(scope.row)">编辑</el-button>
           <el-button v-if="isAdmin" size="small" type="danger" @click.stop="removeDevice(scope.row)">删除</el-button>
         </template>
@@ -83,9 +63,7 @@
         <el-descriptions-item label="存放位置（房间号）">{{ detail.location }}</el-descriptions-item>
         <el-descriptions-item label="所属部门">{{ detail.department }}</el-descriptions-item>
         <el-descriptions-item label="责任人">{{ detail.owner }}</el-descriptions-item>
-        <el-descriptions-item label="使用状态">{{ statusText(detail.status) }}</el-descriptions-item>
         <el-descriptions-item label="固定资产编号">{{ detail.asset_code }}</el-descriptions-item>
-        <el-descriptions-item label="当前领用人">{{ detail.borrower || '-' }}</el-descriptions-item>
         <el-descriptions-item label="计量状态">{{ calibrationText(detail.calibration_status) }}</el-descriptions-item>
         <el-descriptions-item label="计量结果">{{ detail.calibration_result || '-' }}</el-descriptions-item>
         <el-descriptions-item label="本次计量时间">{{ detail.last_calibration_date || '-' }}</el-descriptions-item>
@@ -109,18 +87,9 @@
         <el-form-item label="存放位置（房间号）"><el-input v-model="editForm.location" /></el-form-item>
         <el-form-item label="所属部门"><el-input v-model="editForm.department" /></el-form-item>
         <el-form-item label="责任人"><el-input v-model="editForm.owner" /></el-form-item>
-        <el-form-item label="当前领用人"><el-input v-model="editForm.borrower" /></el-form-item>
         <el-form-item label="固定资产编号"><el-input v-model="editForm.asset_code" /></el-form-item>
         <el-form-item label="仪器使用注意事项">
           <el-input v-model="editForm.usage_notes" type="textarea" :rows="3" />
-        </el-form-item>
-        <el-form-item label="使用状态">
-          <el-select v-model="editForm.status">
-            <el-option label="空闲" value="idle" />
-            <el-option label="使用中" value="in_use" />
-            <el-option label="维修中" value="repair" />
-            <el-option label="报废" value="scrapped" />
-          </el-select>
         </el-form-item>
         <el-form-item label="计量状态">
           <el-select v-model="editForm.calibration_status">
@@ -149,7 +118,11 @@
       </template>
     </el-dialog>
 
-    <CalibrationRecords />
+    <CalibrationRecords
+      v-model:show="calibrationRecordsVisible"
+      :instrument="calibrationInstrument"
+      @changed="loadData"
+    />
   </div>
 </template>
 
@@ -158,8 +131,6 @@ import { computed, reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getList,
-  useDevice,
-  returnDevice,
   deleteInstrument,
   exportExcel,
   importExcel,
@@ -173,7 +144,6 @@ const list = ref([])
 const query = reactive({
   code: '',
   name: '',
-  status: '',
   usage_notes: '',
   location: '',
   department: ''
@@ -182,6 +152,8 @@ const showAdd = ref(false)
 const detailVisible = ref(false)
 const editVisible = ref(false)
 const detail = ref(null)
+const calibrationRecordsVisible = ref(false)
+const calibrationInstrument = ref(null)
 const calibrationForm = reactive({
   calibration_result: '合格',
   last_calibration_date: '',
@@ -198,7 +170,6 @@ const editForm = reactive({
   location: '',
   department: '',
   owner: '',
-  borrower: '',
   asset_code: '',
   status: 'idle',
   usage_notes: '',
@@ -218,27 +189,11 @@ const getCurrentUser = () => {
 
 const isAdmin = computed(() => getCurrentUser()?.username === 'admin')
 
-const canReturn = row => {
-  if (row.status !== 'in_use') return false
-
-  const user = getCurrentUser()
-  if (user?.username === 'admin') return true
-
-  return [user?.nickname, user?.username].filter(Boolean).includes(row.borrower)
-}
-
 const formatDate = value => {
   if (!value) return null
   const date = new Date(value)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
-
-const statusText = status => ({
-  idle: '空闲',
-  in_use: '使用中',
-  repair: '维修中',
-  scrapped: '已报废'
-}[status] || status)
 
 const calibrationText = status => ({
   uncalibrated: '未校准',
@@ -276,7 +231,6 @@ const loadData = async () => {
 const resetQuery = async () => {
   query.code = ''
   query.name = ''
-  query.status = ''
   query.usage_notes = ''
   query.location = ''
   query.department = ''
@@ -297,6 +251,11 @@ const openDetail = row => {
   detailVisible.value = true
 }
 
+const openCalibrationRecords = row => {
+  calibrationInstrument.value = row
+  calibrationRecordsVisible.value = true
+}
+
 const openEdit = row => {
   Object.assign(editForm, {
     id: row.id,
@@ -308,7 +267,6 @@ const openEdit = row => {
     location: row.location || '',
     department: row.department || '',
     owner: row.owner || '',
-    borrower: row.borrower || '',
     asset_code: row.asset_code || '',
     status: row.status || 'idle',
     usage_notes: row.usage_notes || '',
@@ -342,29 +300,6 @@ const saveCalibration = async () => {
   detail.value = updated
   ElMessage.success('计量结果已保存')
   await loadData()
-}
-
-const use = async row => {
-  try {
-    const user = getCurrentUser()
-    const borrower = user?.nickname || user?.username || '未知用户'
-
-    await useDevice(row.id, { borrower })
-    ElMessage.success(`领用成功，当前领用人：${borrower}`)
-    await loadData()
-  } catch (e) {
-    console.error('领用失败', e)
-  }
-}
-
-const ret = async row => {
-  try {
-    await returnDevice(row.id)
-    ElMessage.success('归还成功')
-    await loadData()
-  } catch (e) {
-    console.error('归还失败', e)
-  }
 }
 
 const removeDevice = async row => {
