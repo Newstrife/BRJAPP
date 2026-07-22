@@ -1,19 +1,25 @@
 import axios from 'axios';
 
-const apiHost = window.location.hostname || 'localhost';
-
 const service = axios.create({
-  baseURL: `${window.location.protocol}//${apiHost}:3000/api`,
+  baseURL: '/api',
   timeout: 20000
 });
+
+const handleUnauthorized = () => {
+  localStorage.removeItem('auth_user');
+  alert('登录已过期，请重新登录');
+  window.location.reload();
+};
 
 service.interceptors.request.use(config => {
   const savedUser = localStorage.getItem('auth_user');
 
   if (savedUser) {
     const user = JSON.parse(savedUser);
-    config.headers['x-user-name'] = user.username;
-    config.headers['x-user-nickname'] = encodeURIComponent(user.nickname || user.username);
+
+    if (user.token) {
+      config.headers.Authorization = `Bearer ${user.token}`;
+    }
   }
 
   return config;
@@ -25,6 +31,11 @@ service.interceptors.response.use(
       return res.data;
     }
 
+    if (res.data.code === 401) {
+      handleUnauthorized();
+      return Promise.reject(res.data.message);
+    }
+
     if (res.data.code !== 0) {
       alert(res.data.message);
       return Promise.reject(res.data.message);
@@ -32,6 +43,11 @@ service.interceptors.response.use(
     return res.data.data;
   },
   error => {
+    if (error.response?.status === 401) {
+      handleUnauthorized();
+      return Promise.reject(error);
+    }
+
     const message = error.response?.data?.message || error.message || '请求失败';
     alert(message);
     return Promise.reject(message);

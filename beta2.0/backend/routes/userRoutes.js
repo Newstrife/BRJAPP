@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/userController');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+
+router.use(requireAuth);
 
 router.put('/me/password', ctrl.changePassword);
 router.get('/', requireAdmin, ctrl.list);

@@ -1,5 +1,8 @@
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const { success, fail } = require('../utils/response');
+
+const isBcryptHash = (value) => /^\$2[aby]\$/.test(value || '');
 
 exports.list = async (req, res) => {
   try {
@@ -29,7 +32,7 @@ exports.create = async (req, res) => {
     const user = await User.create({
       username,
       nickname: nickname || username,
-      password,
+      password: await bcrypt.hash(password, 10),
       role: role || 'user'
     });
 
@@ -56,7 +59,7 @@ exports.update = async (req, res) => {
     };
 
     if (req.body.password) {
-      nextData.password = req.body.password;
+      nextData.password = await bcrypt.hash(req.body.password, 10);
     }
 
     await user.update(nextData);
@@ -78,7 +81,7 @@ exports.remove = async (req, res) => {
 
     if (!user) return fail(res, '账号不存在');
     if (user.username === 'admin') return fail(res, '不能删除默认管理员账号');
-    if (req.headers['x-user-name'] === user.username) return fail(res, '不能删除当前登录账号');
+    if (req.user.username === user.username) return fail(res, '不能删除当前登录账号');
 
     await user.destroy();
     success(res, null);
@@ -89,14 +92,18 @@ exports.remove = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const username = req.headers['x-user-name'];
-    const user = await User.findOne({ where: { username } });
+    const user = await User.findOne({ where: { username: req.user.username } });
 
     if (!user) return fail(res, '账号不存在');
     if (!req.body.oldPassword || !req.body.newPassword) return fail(res, '请输入原密码和新密码');
-    if (user.password !== req.body.oldPassword) return fail(res, '原密码不正确');
 
-    user.password = req.body.newPassword;
+    const oldPasswordOk = isBcryptHash(user.password)
+      ? await bcrypt.compare(req.body.oldPassword, user.password)
+      : user.password === req.body.oldPassword;
+
+    if (!oldPasswordOk) return fail(res, '原密码不正确');
+
+    user.password = await bcrypt.hash(req.body.newPassword, 10);
     await user.save();
 
     success(res, null);

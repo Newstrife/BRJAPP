@@ -4,12 +4,12 @@ const Instrument = require('../models/instrument');
 const { success, fail } = require('../utils/response');
 
 const currentUser = (req) => ({
-  username: req.headers['x-user-name'] || '',
-  nickname: req.headers['x-user-nickname'] ? decodeURIComponent(req.headers['x-user-nickname']) : ''
+  username: req.user?.username || '',
+  nickname: req.user?.nickname || ''
 });
 
 const requireAdmin = (req, res) => {
-  if (currentUser(req).username === 'admin') return true;
+  if (req.user?.role === 'admin') return true;
   fail(res, '仅管理员可以操作计量记录');
   return false;
 };

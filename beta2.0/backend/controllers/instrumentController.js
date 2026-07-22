@@ -26,18 +26,12 @@ const buildInstrumentPayload = (body) => ({
   lock_reason: body.lock_reason
 });
 
-const currentUser = (req) => {
-  const nickname = req.headers['x-user-nickname']
-    ? decodeURIComponent(req.headers['x-user-nickname'])
-    : '';
+const currentUser = (req) => ({
+  username: req.user?.username || '',
+  nickname: req.user?.nickname || ''
+});
 
-  return {
-    username: req.headers['x-user-name'] || '',
-    nickname
-  };
-};
-
-const isAdmin = (req) => currentUser(req).username === 'admin';
+const isAdmin = (req) => req.user?.role === 'admin';
 const requireAdmin = (req, res) => {
   if (isAdmin(req)) return true;
   fail(res, '仅管理员可以操作');

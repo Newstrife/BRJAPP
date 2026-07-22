@@ -4,6 +4,8 @@
   "description": "",
   "main": "main.js",
   "scripts": {
+    "start": "node app.js",
+    "release": "cd ../frontend/device-ui && npm run build && cd ../../backend && node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,9 +14,11 @@
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.16.1",
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
     "multer": "^2.1.1",
     "mysql2": "^3.22.3",
     "node-cron": "^4.2.1",
