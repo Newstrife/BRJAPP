@@ -1,8 +1,16 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const { success, fail } = require('../utils/response');
+const audit = require('../services/auditService');
 
 const isBcryptHash = (value) => /^\$2[aby]\$/.test(value || '');
+
+const publicUser = (user) => ({
+  id: user.id,
+  username: user.username,
+  nickname: user.nickname,
+  role: user.role
+});
 
 exports.list = async (req, res) => {
   try {
@@ -36,6 +44,14 @@ exports.create = async (req, res) => {
       role: role || 'user'
     });
 
+    await audit.record(req, {
+      module: 'user',
+      action: 'create',
+      targetId: user.id,
+      targetLabel: user.username,
+      detail: publicUser(user)
+    });
+
     success(res, {
       id: user.id,
       username: user.username,
@@ -62,7 +78,17 @@ exports.update = async (req, res) => {
       nextData.password = await bcrypt.hash(req.body.password, 10);
     }
 
+    const before = { ...publicUser(user), password_changed: Boolean(req.body.password) };
+
     await user.update(nextData);
+
+    await audit.record(req, {
+      module: 'user',
+      action: 'update',
+      targetId: user.id,
+      targetLabel: user.username,
+      detail: { before, after: publicUser(user) }
+    });
 
     success(res, {
       id: user.id,
@@ -83,7 +109,18 @@ exports.remove = async (req, res) => {
     if (user.username === 'admin') return fail(res, '不能删除默认管理员账号');
     if (req.user.username === user.username) return fail(res, '不能删除当前登录账号');
 
+    const snapshot = publicUser(user);
+
     await user.destroy();
+
+    await audit.record(req, {
+      module: 'user',
+      action: 'remove',
+      targetId: snapshot.id,
+      targetLabel: snapshot.username,
+      detail: snapshot
+    });
+
     success(res, null);
   } catch (err) {
     fail(res, err.message);
@@ -105,6 +142,13 @@ exports.changePassword = async (req, res) => {
 
     user.password = await bcrypt.hash(req.body.newPassword, 10);
     await user.save();
+
+    await audit.record(req, {
+      module: 'user',
+      action: 'password',
+      targetId: user.id,
+      targetLabel: user.username
+    });
 
     success(res, null);
   } catch (err) {

@@ -9,12 +9,12 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button @click="loadRecords">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
+          <el-button type="primary" :icon="Search" @click="loadRecords">查询</el-button>
+          <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
 
-      <el-button v-if="isAdmin" type="primary" @click="openCreate">新增计量记录</el-button>
+      <el-button v-if="isAdmin" type="primary" :icon="Plus" @click="openCreate">新增计量记录</el-button>
     </div>
 
     <el-table :data="records" border>
@@ -45,7 +45,7 @@
       width="620px"
       append-to-body
     >
-      <el-form :model="form" label-width="120px">
+      <el-form :model="form" :label-position="isMobile ? 'top' : 'left'" label-width="120px">
         <el-form-item label="设备">
           <el-input :model-value="instrumentLabel" disabled />
         </el-form-item>
@@ -85,12 +85,14 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Refresh, Plus } from '@element-plus/icons-vue'
 import {
   getCalibrationRecords,
   createCalibrationRecord,
   updateCalibrationRecord,
   deleteCalibrationRecord
 } from '../api/calibrationRecord'
+import { useIsMobile } from '../utils/useIsMobile'
 
 const props = defineProps({
   show: Boolean,
@@ -102,6 +104,7 @@ const props = defineProps({
 const emit = defineEmits(['update:show', 'changed'])
 
 const visible = ref(props.show)
+const isMobile = useIsMobile()
 const records = ref([])
 const formVisible = ref(false)
 const selectedFile = ref(null)
@@ -140,7 +143,7 @@ const formatDate = value => {
 
 const fileUrl = file => {
   const normalized = String(file).replaceAll('\\', '/')
-  return `${window.location.protocol}//${window.location.hostname}:3000/${normalized}`
+  return `/${normalized.replace(/^\/+/, '')}`
 }
 
 const loadRecords = async () => {
@@ -238,6 +241,7 @@ const removeRecord = async row => {
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .record-query {

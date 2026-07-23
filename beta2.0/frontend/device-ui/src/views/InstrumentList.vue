@@ -1,5 +1,9 @@
 ﻿<template>
-  <div class="instrument-list">
+  <div class="page-panel instrument-list">
+    <div class="panel-title">
+      <h2>设备列表</h2>
+    </div>
+
     <el-form class="toolbar" :model="query" inline>
       <el-form-item label="设备编号">
         <el-input v-model="query.code" placeholder="设备编号" clearable />
@@ -17,32 +21,32 @@
         <el-input v-model="query.department" placeholder="所属部门" clearable />
       </el-form-item>
       <el-form-item>
-        <el-button @click="loadData">搜索</el-button>
-        <el-button @click="resetQuery">重置</el-button>
-        <el-button v-if="isAdmin" type="primary" @click="showAdd = true">新增</el-button>
+        <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
+        <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
+        <el-button v-if="isAdmin" type="primary" plain :icon="Plus" @click="showAdd = true">新增</el-button>
         <el-upload v-if="isAdmin" :show-file-list="false" :http-request="uploadExcel" accept=".xlsx,.xls">
-          <el-button>导入 Excel</el-button>
+          <el-button :icon="Upload">导入 Excel</el-button>
         </el-upload>
-        <el-button v-if="isAdmin" @click="exportExcelFile">导出</el-button>
+        <el-button v-if="isAdmin" :icon="Download" @click="exportExcelFile">导出</el-button>
       </el-form-item>
     </el-form>
 
-    <el-table :data="list" border @row-dblclick="openDetail">
-      <el-table-column prop="code" label="设备编号" />
-      <el-table-column prop="name" label="设备名称" />
-      <el-table-column prop="model" label="型号规格" />
-      <el-table-column prop="location" label="存放位置" />
-      <el-table-column prop="department" label="所属部门" />
-      <el-table-column prop="owner" label="责任人" />
-      <el-table-column prop="next_calibration_date" label="下次计量时间" width="140" />
-      <el-table-column label="计量状态" width="120">
+    <el-table v-loading="loading" :data="list" border @row-dblclick="openDetail">
+      <el-table-column prop="code" label="设备编号" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="name" label="设备名称" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="model" label="型号规格" min-width="130" show-overflow-tooltip />
+      <el-table-column prop="location" label="存放位置" min-width="110" show-overflow-tooltip />
+      <el-table-column prop="department" label="所属部门" min-width="110" show-overflow-tooltip />
+      <el-table-column prop="owner" label="责任人" min-width="90" show-overflow-tooltip />
+      <el-table-column prop="next_calibration_date" label="下次计量时间" width="120" />
+      <el-table-column label="计量状态" width="110" align="center">
         <template #default="scope">
-          <el-tag :type="calibrationTag(scope.row.calibration_status)">
+          <el-tag :type="calibrationTag(scope.row.calibration_status)" effect="light">
             {{ calibrationText(scope.row.calibration_status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" :width="isAdmin ? 220 : 110">
+      <el-table-column label="操作" :width="isAdmin ? 220 : 110" fixed="right">
         <template #default="scope">
           <el-button size="small" @click.stop="openCalibrationRecords(scope.row)">计量记录</el-button>
           <el-button v-if="isAdmin" size="small" type="primary" @click.stop="openEdit(scope.row)">编辑</el-button>
@@ -54,7 +58,7 @@
     <InstrumentForm v-model:show="showAdd" @success="handleFormSuccess" />
 
     <el-dialog v-model="detailVisible" title="设备详情" width="820px">
-      <el-descriptions v-if="detail" :column="2" border>
+      <el-descriptions v-if="detail" :column="isMobile ? 1 : 2" border>
         <el-descriptions-item label="设备编号">{{ detail.code }}</el-descriptions-item>
         <el-descriptions-item label="设备名称">{{ detail.name }}</el-descriptions-item>
         <el-descriptions-item label="型号规格">{{ detail.model }}</el-descriptions-item>
@@ -78,7 +82,11 @@
     </el-dialog>
 
     <el-dialog v-model="editVisible" title="编辑设备资料" width="820px">
-      <el-form :model="editForm" label-width="150px" label-position="left">
+      <el-form
+        :model="editForm"
+        :label-width="isMobile ? 'auto' : '150px'"
+        :label-position="isMobile ? 'top' : 'left'"
+      >
         <el-form-item label="设备编号"><el-input v-model="editForm.code" /></el-form-item>
         <el-form-item label="设备名称"><el-input v-model="editForm.name" /></el-form-item>
         <el-form-item label="型号规格"><el-input v-model="editForm.model" /></el-form-item>
@@ -129,6 +137,7 @@
 <script setup>
 import { computed, reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Refresh, Plus, Upload, Download } from '@element-plus/icons-vue'
 import {
   getList,
   deleteInstrument,
@@ -139,8 +148,11 @@ import {
 } from '../api/instrument'
 import InstrumentForm from '../components/InstrumentForm.vue'
 import CalibrationRecords from '../components/CalibrationRecords.vue'
+import { useIsMobile } from '../utils/useIsMobile'
 
 const list = ref([])
+const loading = ref(false)
+const isMobile = useIsMobile()
 const query = reactive({
   code: '',
   name: '',
@@ -219,12 +231,15 @@ const toPayload = form => ({
 })
 
 const loadData = async () => {
+  loading.value = true
   try {
     const res = await getList(query)
     list.value = Array.isArray(res) ? res : []
   } catch (e) {
     console.error('加载失败', e)
     list.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -355,14 +370,23 @@ onMounted(loadData)
 </script>
 
 <style scoped>
-.instrument-list {
-  padding: 24px;
+.toolbar {
+  margin-bottom: 4px;
 }
 
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+.toolbar :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+
+.toolbar :deep(.el-input),
+.toolbar :deep(.el-select) {
+  width: 180px;
+}
+
+@media (max-width: 768px) {
+  .toolbar :deep(.el-input),
+  .toolbar :deep(.el-select) {
+    width: 100%;
+  }
 }
 </style>

@@ -19,6 +19,7 @@ app.use('/api/wecom', require('./routes/wecomRoutes'));
 app.use('/wecom', require('./routes/wecomRoutes'));
 app.use('/api/instruments', require('./routes/instrumentRoutes'));
 app.use('/api/calibration-records', require('./routes/calibrationRecordRoutes'));
+app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
 
 const distDir = path.join(__dirname, '..', 'frontend', 'device-ui', 'dist');
 

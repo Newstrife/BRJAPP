@@ -1,5 +1,6 @@
 const service = require('../services/instrumentService');
 const excel = require('../services/excelService');
+const audit = require('../services/auditService');
 const { success, fail } = require('../utils/response');
 const Instrument = require('../models/instrument');
 const scheduler = require('../jobs/scheduler');
@@ -43,6 +44,15 @@ exports.create = async (req, res) => {
     if (!requireAdmin(req, res)) return;
 
     const instrument = await Instrument.create(buildInstrumentPayload(req.body));
+
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'create',
+      targetId: instrument.id,
+      targetLabel: `${instrument.code || ''} ${instrument.name || ''}`.trim(),
+      detail: instrument.toJSON()
+    });
+
     success(res, instrument);
   } catch (err) {
     fail(res, err.message);
@@ -57,7 +67,18 @@ exports.update = async (req, res) => {
 
     if (!device) return fail(res, '设备不存在');
 
+    const before = device.toJSON();
+
     await device.update(buildInstrumentPayload(req.body));
+
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'update',
+      targetId: device.id,
+      targetLabel: `${device.code || ''} ${device.name || ''}`.trim(),
+      detail: { before, after: device.toJSON() }
+    });
+
     success(res, device);
   } catch (err) {
     fail(res, err.message);
@@ -72,7 +93,18 @@ exports.remove = async (req, res) => {
 
     if (!device) return fail(res, '设备不存在');
 
+    const snapshot = device.toJSON();
+
     await device.destroy();
+
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'remove',
+      targetId: snapshot.id,
+      targetLabel: `${snapshot.code || ''} ${snapshot.name || ''}`.trim(),
+      detail: snapshot
+    });
+
     success(res, null);
   } catch (err) {
     fail(res, err.message);
@@ -99,6 +131,20 @@ exports.updateCalibration = async (req, res) => {
       lock_reason: calibrationStatus === 'failed' ? '校准不合格' : null
     });
 
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'calibration',
+      targetId: device.id,
+      targetLabel: `${device.code || ''} ${device.name || ''}`.trim(),
+      detail: {
+        result,
+        note: req.body.calibration_note,
+        last_calibration_date: req.body.last_calibration_date,
+        next_calibration_date: req.body.next_calibration_date,
+        calibration_status: calibrationStatus
+      }
+    });
+
     success(res, device);
   } catch (err) {
     fail(res, err.message);
@@ -121,6 +167,15 @@ exports.useDevice = async (req, res) => {
       status: 'in_use',
       borrower
     });
+
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'use',
+      targetId: device.id,
+      targetLabel: `${device.code || ''} ${device.name || ''}`.trim(),
+      detail: { borrower }
+    });
+
     success(res, device);
   } catch (err) {
     fail(res, err.message);
@@ -146,6 +201,15 @@ exports.returnDevice = async (req, res) => {
       status: 'idle',
       borrower: null
     });
+
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'return',
+      targetId: device.id,
+      targetLabel: `${device.code || ''} ${device.name || ''}`.trim(),
+      detail: { returned_by: user.nickname || user.username, previous_borrower: borrower }
+    });
+
     success(res, device);
   } catch (err) {
     fail(res, err.message);
@@ -168,6 +232,14 @@ exports.importExcel = async (req, res) => {
 
     const data = excel.parseExcel(req.file.path);
     const rows = await Instrument.bulkCreate(data);
+
+    await audit.record(req, {
+      module: 'instrument',
+      action: 'import',
+      targetLabel: req.file.originalname || 'Excel 导入',
+      detail: { imported: rows.length, filename: req.file.originalname }
+    });
+
     success(res, {
       imported: rows.length,
       list: rows

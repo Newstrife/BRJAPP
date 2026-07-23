@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const Instrument = require('../models/instrument');
 const wecom = require('../services/wecomService');
+const audit = require('../services/auditService');
 
 const dateOnly = (value) => {
   if (!value) return '';
@@ -31,6 +32,14 @@ const checkCalibrationDates = async () => {
       item.locked = true;
       item.lock_reason = '超期';
       await item.save();
+
+      await audit.record(null, {
+        module: 'instrument',
+        action: 'lock',
+        targetId: item.id,
+        targetLabel: `${item.code || ''} ${item.name || ''}`.trim(),
+        detail: { reason: '校准超期，自动锁定', next_calibration_date: reminderDate }
+      });
       continue;
     }
 

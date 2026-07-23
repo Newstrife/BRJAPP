@@ -4,7 +4,7 @@
       <h2>企业微信机器人</h2>
     </div>
 
-    <el-form :model="form" label-width="120px">
+    <el-form class="wecom-form" :model="form" :label-position="isMobile ? 'top' : 'left'" label-width="120px">
       <el-form-item label="Webhook">
         <el-input
           v-model="form.webhook"
@@ -16,8 +16,8 @@
         <el-input v-model="form.message" placeholder="企业微信机器人测试消息" />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
-        <el-button :loading="testing" @click="test">测试发送</el-button>
+        <el-button type="primary" :icon="Check" :loading="saving" @click="save">保存</el-button>
+        <el-button :icon="Promotion" :loading="testing" @click="test">测试发送</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -26,10 +26,13 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Check, Promotion } from '@element-plus/icons-vue'
 import { getWecomSetting, saveWecomSetting, testWecom } from '../api/wecom'
+import { useIsMobile } from '../utils/useIsMobile'
 
 const saving = ref(false)
 const testing = ref(false)
+const isMobile = useIsMobile()
 const form = reactive({
   webhook: '',
   message: '企业微信机器人测试消息'
@@ -67,16 +70,7 @@ onMounted(loadSetting)
 </script>
 
 <style scoped>
-.page-panel {
-  margin: 24px;
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #e6e8ef;
-  border-radius: 8px;
-}
-
-.panel-title h2 {
-  margin: 0 0 16px;
-  font-size: 20px;
+.wecom-form {
+  max-width: 680px;
 }
 </style>

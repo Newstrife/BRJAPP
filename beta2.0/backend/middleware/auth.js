@@ -28,6 +28,14 @@ exports.requireAdmin = (req, res, next) => {
   next();
 };
 
+exports.requireRole = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.user?.role)) {
+    return res.status(403).json({ code: 403, message: '当前角色无权操作' });
+  }
+
+  next();
+};
+
 exports.signToken = (user) =>
   jwt.sign(
     {

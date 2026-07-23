@@ -1,6 +1,12 @@
 <template>
   <el-dialog v-model="visible" title="新增设备" width="720px" :before-close="handleClose">
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="140px" label-position="left">
+    <el-form
+      :model="form"
+      :rules="rules"
+      ref="formRef"
+      :label-width="isMobile ? 'auto' : '140px'"
+      :label-position="isMobile ? 'top' : 'left'"
+    >
       <el-form-item label="设备编号" prop="code">
         <el-input v-model="form.code" placeholder="必填" />
       </el-form-item>
@@ -73,11 +79,13 @@
 import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createInstrument } from '../api/instrument'
+import { useIsMobile } from '../utils/useIsMobile'
 
 const props = defineProps({ show: Boolean })
 const emit = defineEmits(['update:show', 'success'])
 const visible = ref(props.show)
 const formRef = ref(null)
+const isMobile = useIsMobile()
 
 watch(() => props.show, val => { visible.value = val })
 watch(visible, val => { emit('update:show', val) })

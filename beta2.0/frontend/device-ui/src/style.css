@@ -1,14 +1,157 @@
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1f2937;
-  background: #f5f7fb;
+:root {
+  --page-bg: #f2f4f8;
+  --panel-bg: #ffffff;
+  --panel-border: #e4e8f0;
+  --text-strong: #1f2937;
+  --text-muted: #6b7280;
+  --header-height: 60px;
+  --radius: 8px;
+  --shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 * {
   box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-strong);
+  background: var(--page-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
 #app {
   min-height: 100vh;
+}
+
+/* ---------- 通用面板 ---------- */
+.page-panel {
+  margin: 16px 24px 24px;
+  padding: 20px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-panel);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.panel-title h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title h2::before {
+  content: "";
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--el-color-primary);
+}
+
+/* ---------- Element Plus 细节统一 ---------- */
+.el-table {
+  --el-table-header-bg-color: #f8fafc;
+  --el-table-header-text-color: #4b5563;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+}
+
+.el-dialog {
+  border-radius: 10px;
+  max-width: 94vw;
+}
+
+.el-dialog__header {
+  border-bottom: 1px solid var(--panel-border);
+  margin-right: 0;
+  padding-bottom: 14px;
+}
+
+.el-dialog__title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.el-descriptions__label {
+  color: var(--text-muted) !important;
+}
+
+/* ---------- 移动端适配 ---------- */
+@media (max-width: 768px) {
+  .page-panel {
+    margin: 12px 12px 16px;
+    padding: 14px;
+  }
+
+  /* 行内筛选表单改为纵向堆叠，控件撑满一行 */
+  .el-form--inline .el-form-item {
+    display: block;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+
+  .el-form--inline .el-form-item__label {
+    display: block;
+    height: auto;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    text-align: left;
+  }
+
+  .el-form--inline .el-form-item__content {
+    display: block;
+  }
+
+  .el-form--inline .el-input,
+  .el-form--inline .el-select,
+  .el-form--inline .el-date-editor,
+  .el-form--inline .el-input__wrapper {
+    width: 100% !important;
+  }
+
+  /* 弹窗、消息框贴屏宽 */
+  .el-dialog {
+    width: 94vw !important;
+    margin-top: 6vh !important;
+  }
+
+  .el-message {
+    min-width: 0;
+    width: 92vw;
+  }
+
+  .el-message-box {
+    width: 92vw !important;
+  }
+
+  /* 表格单元格更紧凑 */
+  .el-table .cell {
+    padding: 0 8px;
+  }
+
+  /* 描述列表在窄屏单列显示由组件属性控制，这里保证文字可换行 */
+  .el-descriptions__label,
+  .el-descriptions__content {
+    word-break: break-all;
+  }
+
+  /* 触屏按钮高度 */
+  .el-button {
+    min-height: 32px;
+  }
 }
