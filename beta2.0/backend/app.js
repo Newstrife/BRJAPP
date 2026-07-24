@@ -7,11 +7,14 @@ const path = require('path');
 const sequelize = require('./config/db');
 const User = require('./models/user');
 const scheduler = require('./jobs/scheduler');
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/uploads', express.static('uploads'));
+
+// 证书等附件统一走鉴权下载，不再公开暴露
+app.use('/api/files', requireAuth, express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
@@ -36,6 +39,15 @@ if (fs.existsSync(distDir)) {
 }
 
 sequelize.sync({ alter: true }).then(async () => {
+  // 历史空编号归一化为 NULL，并尽力补充唯一索引（存在重复时仅应用层校验兜底）
+  await sequelize.query("UPDATE instrument SET code = NULL WHERE code = ''").catch(() => {});
+
+  try {
+    await sequelize.query('ALTER TABLE instrument ADD UNIQUE INDEX uniq_instrument_code (code)');
+  } catch (err) {
+    // 索引已存在或存在重复编号
+  }
+
   const [admin] = await User.findOrCreate({
     where: { username: 'admin' },
     defaults: {

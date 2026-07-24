@@ -142,8 +142,10 @@ const formatDate = value => {
 }
 
 const fileUrl = file => {
-  const normalized = String(file).replaceAll('\\', '/')
-  return `/${normalized.replace(/^\/+/, '')}`
+  const relative = String(file).replaceAll('\\', '/').replace(/^\/+/, '').replace(/^uploads\//, '')
+  const token = JSON.parse(localStorage.getItem('auth_user') || '{}').token || ''
+
+  return `/api/files/${relative}?token=${encodeURIComponent(token)}`
 }
 
 const loadRecords = async () => {

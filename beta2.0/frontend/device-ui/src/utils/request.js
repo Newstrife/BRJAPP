@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 const service = axios.create({
   baseURL: '/api',
@@ -7,7 +8,7 @@ const service = axios.create({
 
 const handleUnauthorized = () => {
   localStorage.removeItem('auth_user');
-  alert('登录已过期，请重新登录');
+  ElMessage.error('登录已过期，请重新登录');
   window.location.reload();
 };
 
@@ -37,7 +38,7 @@ service.interceptors.response.use(
     }
 
     if (res.data.code !== 0) {
-      alert(res.data.message);
+      ElMessage.error(res.data.message);
       return Promise.reject(res.data.message);
     }
     return res.data.data;
@@ -49,7 +50,7 @@ service.interceptors.response.use(
     }
 
     const message = error.response?.data?.message || error.message || '请求失败';
-    alert(message);
+    ElMessage.error(message);
     return Promise.reject(message);
   }
 );

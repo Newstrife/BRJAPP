@@ -27,7 +27,10 @@ const CalibrationRecord = sequelize.define('calibration_record', {
 }, {
   tableName: 'calibration_record',
   underscored: true,
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    { fields: ['instrument_id'] }
+  ]
 });
 
 module.exports = CalibrationRecord;

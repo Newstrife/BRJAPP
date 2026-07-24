@@ -21,7 +21,7 @@
         <el-input v-model="query.department" placeholder="所属部门" clearable />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
+        <el-button type="primary" :icon="Search" @click="search">搜索</el-button>
         <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
         <el-button v-if="isAdmin" type="primary" plain :icon="Plus" @click="showAdd = true">新增</el-button>
         <el-upload v-if="isAdmin" :show-file-list="false" :http-request="uploadExcel" accept=".xlsx,.xls">
@@ -54,6 +54,17 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        layout="total, prev, pager, next"
+        background
+        @current-change="loadData"
+      />
+    </div>
 
     <InstrumentForm v-model:show="showAdd" @success="handleFormSuccess" />
 
@@ -153,6 +164,9 @@ import { useIsMobile } from '../utils/useIsMobile'
 const list = ref([])
 const loading = ref(false)
 const isMobile = useIsMobile()
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 const query = reactive({
   code: '',
   name: '',
@@ -233,14 +247,21 @@ const toPayload = form => ({
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await getList(query)
-    list.value = Array.isArray(res) ? res : []
+    const res = await getList({ ...query, page: page.value, pageSize: pageSize.value })
+    list.value = res.list || []
+    total.value = res.total || 0
   } catch (e) {
     console.error('加载失败', e)
     list.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
+}
+
+const search = () => {
+  page.value = 1
+  loadData()
 }
 
 const resetQuery = async () => {
@@ -249,6 +270,7 @@ const resetQuery = async () => {
   query.usage_notes = ''
   query.location = ''
   query.department = ''
+  page.value = 1
   await loadData()
 }
 
@@ -345,7 +367,9 @@ const uploadExcel = async ({ file }) => {
     data.append('file', file)
     const res = await importExcel(data)
 
-    ElMessage.success(`导入成功，共 ${res.imported} 条`)
+    ElMessage.success(
+      `导入成功 ${res.imported} 条` + (res.skipped ? `，跳过重复编号 ${res.skipped} 条` : '')
+    )
     await loadData()
   } catch (e) {
     console.error('导入失败', e)
@@ -381,6 +405,12 @@ onMounted(loadData)
 .toolbar :deep(.el-input),
 .toolbar :deep(.el-select) {
   width: 180px;
+}
+
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 @media (max-width: 768px) {

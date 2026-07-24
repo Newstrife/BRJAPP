@@ -25,13 +25,17 @@ exports.list = async (req, res) => {
       if (req.query.end) where.createdAt[Op.lte] = new Date(`${req.query.end}T23:59:59`);
     }
 
-    const data = await AuditLog.findAll({
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(req.query.pageSize, 10) || 20, 1), 200);
+
+    const { count, rows } = await AuditLog.findAndCountAll({
       where,
       order: [['id', 'DESC']],
-      limit: 500
+      limit: pageSize,
+      offset: (page - 1) * pageSize
     });
 
-    success(res, data);
+    success(res, { total: count, list: rows, page, pageSize });
   } catch (err) {
     fail(res, err.message);
   }

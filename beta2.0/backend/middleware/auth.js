@@ -8,7 +8,8 @@ const unauthorized = (res) =>
 
 exports.requireAuth = (req, res, next) => {
   const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  // 文件下载等浏览器直接打开的链接无法携带请求头，允许通过 ?token= 传递
+  const token = header.startsWith('Bearer ') ? header.slice(7) : (req.query.token || null);
 
   if (!token) return unauthorized(res);
 

@@ -13,7 +13,7 @@
     </div>
 
     <div v-loading="loading" class="m-cards">
-      <div v-for="item in visibleList" :key="item.id" class="m-card" @click="$emit('open', item)">
+      <div v-for="item in list" :key="item.id" class="m-card" @click="$emit('open', item)">
         <div class="m-card-head">
           <span class="m-card-name">{{ item.name || '未命名设备' }}</span>
           <el-tag size="small" :type="calibrationTag(item.calibration_status)" effect="light">
@@ -36,12 +36,12 @@
         </div>
       </div>
 
-      <el-empty v-if="!loading && filteredList.length === 0" description="没有符合条件的设备" />
+      <el-empty v-if="!loading && list.length === 0" description="没有符合条件的设备" />
     </div>
 
-    <div v-if="visibleList.length < filteredList.length" class="m-more">
-      <el-button text type="primary" @click="limit += pageSize">
-        加载更多（{{ visibleList.length }} / {{ filteredList.length }}）
+    <div v-if="list.length < total" class="m-more">
+      <el-button text type="primary" :loading="loading" @click="$emit('load-more')">
+        加载更多（{{ list.length }} / {{ total }}）
       </el-button>
     </div>
 
@@ -73,14 +73,14 @@
       </el-form>
       <div class="m-drawer-actions">
         <el-button size="large" @click="resetFilters">重置</el-button>
-        <el-button size="large" type="primary" @click="filterVisible = false">确定</el-button>
+        <el-button size="large" type="primary" @click="applyFilters">确定</el-button>
       </div>
     </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { Search, Filter, Refresh } from '@element-plus/icons-vue'
 import { useBackToClose } from '../utils/useBackToClose'
 import {
@@ -92,15 +92,14 @@ import {
 
 const props = defineProps({
   list: { type: Array, default: () => [] },
-  loading: Boolean
+  loading: Boolean,
+  total: { type: Number, default: 0 }
 })
 
-defineEmits(['open', 'refresh'])
+const emit = defineEmits(['open', 'refresh', 'query', 'load-more'])
 
 const keyword = ref('')
 const filterVisible = ref(false)
-const pageSize = 20
-const limit = ref(pageSize)
 
 useBackToClose(filterVisible)
 
@@ -111,29 +110,27 @@ const filters = reactive({
   status: ''
 })
 
-const filteredList = computed(() => {
-  const kw = keyword.value.trim().toLowerCase()
-
-  return props.list.filter(item => {
-    if (kw) {
-      const haystack = `${item.code || ''} ${item.name || ''} ${item.location || ''}`.toLowerCase()
-      if (!haystack.includes(kw)) return false
-    }
-
-    if (filters.location && !(item.location || '').includes(filters.location)) return false
-    if (filters.department && !(item.department || '').includes(filters.department)) return false
-    if (filters.calibration_status && item.calibration_status !== filters.calibration_status) return false
-    if (filters.status && item.status !== filters.status) return false
-
-    return true
+const emitQuery = () => {
+  emit('query', {
+    keyword: keyword.value.trim(),
+    location: filters.location,
+    department: filters.department,
+    calibration_status: filters.calibration_status,
+    status: filters.status
   })
+}
+
+let debounceTimer = null
+
+watch(keyword, () => {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(emitQuery, 400)
 })
 
-const visibleList = computed(() => filteredList.value.slice(0, limit.value))
-
-watch([keyword, filters], () => {
-  limit.value = pageSize
-}, { deep: true })
+const applyFilters = () => {
+  filterVisible.value = false
+  emitQuery()
+}
 
 const resetFilters = () => {
   filters.location = ''
@@ -141,6 +138,7 @@ const resetFilters = () => {
   filters.calibration_status = ''
   filters.status = ''
   filterVisible.value = false
+  emitQuery()
 }
 </script>
 

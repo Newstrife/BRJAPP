@@ -45,7 +45,12 @@ const AuditLog = sequelize.define('audit_log', {
   tableName: 'audit_log',
   underscored: true,
   timestamps: true,
-  updatedAt: false
+  updatedAt: false,
+  indexes: [
+    { fields: ['module'] },
+    { fields: ['action'] },
+    { fields: ['created_at'] }
+  ]
 });
 
 // 审计日志只允许新增，任何修改/删除都直接拒绝

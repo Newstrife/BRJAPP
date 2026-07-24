@@ -4,6 +4,7 @@ const audit = require('../services/auditService');
 const { success, fail } = require('../utils/response');
 const Instrument = require('../models/instrument');
 const scheduler = require('../jobs/scheduler');
+const fs = require('fs');
 
 const buildInstrumentPayload = (body) => ({
   code: body.code,
@@ -43,6 +44,11 @@ exports.create = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
+    if (req.body.code) {
+      const duplicate = await Instrument.findOne({ where: { code: req.body.code } });
+      if (duplicate) return fail(res, `设备编号 ${req.body.code} 已存在`);
+    }
+
     const instrument = await Instrument.create(buildInstrumentPayload(req.body));
 
     await audit.record(req, {
@@ -66,6 +72,11 @@ exports.update = async (req, res) => {
     const device = await Instrument.findByPk(req.params.id);
 
     if (!device) return fail(res, '设备不存在');
+
+    if (req.body.code && req.body.code !== device.code) {
+      const duplicate = await Instrument.findOne({ where: { code: req.body.code } });
+      if (duplicate) return fail(res, `设备编号 ${req.body.code} 已存在`);
+    }
 
     const before = device.toJSON();
 
@@ -230,22 +241,52 @@ exports.importExcel = async (req, res) => {
     if (!requireAdmin(req, res)) return;
     if (!req.file) return fail(res, '请上传文件');
 
-    const data = excel.parseExcel(req.file.path);
-    const rows = await Instrument.bulkCreate(data);
+    const data = excel.parseExcel(req.file.path)
+      .map(item => ({ ...item, code: item.code || null }));
+
+    const codes = data.map(item => item.code).filter(Boolean);
+    const existing = codes.length
+      ? await Instrument.findAll({ where: { code: codes }, attributes: ['code'] })
+      : [];
+    const existingCodes = new Set(existing.map(item => item.code));
+
+    const seen = new Set();
+    const rows = [];
+    const skipped = [];
+
+    for (const item of data) {
+      if (item.code && (existingCodes.has(item.code) || seen.has(item.code))) {
+        skipped.push(item.code);
+        continue;
+      }
+
+      if (item.code) seen.add(item.code);
+      rows.push(item);
+    }
+
+    const created = await Instrument.bulkCreate(rows);
 
     await audit.record(req, {
       module: 'instrument',
       action: 'import',
       targetLabel: req.file.originalname || 'Excel 导入',
-      detail: { imported: rows.length, filename: req.file.originalname }
+      detail: {
+        imported: created.length,
+        skipped: skipped.length,
+        skipped_codes: skipped.slice(0, 20),
+        filename: req.file.originalname
+      }
     });
 
     success(res, {
-      imported: rows.length,
-      list: rows
+      imported: created.length,
+      skipped: skipped.length,
+      skipped_codes: skipped.slice(0, 20)
     });
   } catch (err) {
     fail(res, err.message);
+  } finally {
+    if (req.file) fs.unlink(req.file.path, () => {});
   }
 };
 
@@ -253,7 +294,7 @@ exports.exportExcel = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
-    const data = await service.list(req.query);
+    const data = await service.listAll(req.query);
     excel.exportExcel(data, res);
   } catch (err) {
     fail(res, err.message);

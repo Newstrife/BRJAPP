@@ -107,7 +107,12 @@ const instrumentLabel = computed(() =>
   `${props.instrument.code || ''} ${props.instrument.name || ''}`.trim()
 )
 
-const fileUrl = file => `/${String(file).replaceAll('\\', '/').replace(/^\/+/, '')}`
+const fileUrl = file => {
+  const relative = String(file).replaceAll('\\', '/').replace(/^\/+/, '').replace(/^uploads\//, '')
+  const token = JSON.parse(localStorage.getItem('auth_user') || '{}').token || ''
+
+  return `/api/files/${relative}?token=${encodeURIComponent(token)}`
+}
 
 const loadRecords = async () => {
   loading.value = true

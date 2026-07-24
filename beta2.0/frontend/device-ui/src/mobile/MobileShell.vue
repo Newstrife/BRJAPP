@@ -9,8 +9,11 @@
         v-if="tab === 'instruments'"
         :list="instruments"
         :loading="loading"
+        :total="total"
         @open="openDetail"
-        @refresh="loadInstruments"
+        @refresh="refreshInstruments"
+        @query="applyQuery"
+        @load-more="loadMore"
       />
       <MobileAuditLogs v-else-if="tab === 'audit'" />
       <MobileProfile v-else :user="user" @logout="$emit('logout')" />
@@ -84,6 +87,9 @@ defineEmits(['logout'])
 const tab = ref('instruments')
 const instruments = ref([])
 const loading = ref(false)
+const total = ref(0)
+const page = ref(1)
+const listQuery = ref({})
 const selectedId = ref(null)
 const recordsInstrument = ref(null)
 
@@ -118,20 +124,37 @@ const goBack = () => {
   back()
 }
 
-const loadInstruments = async () => {
+const loadInstruments = async ({ reset = true } = {}) => {
+  if (reset) page.value = 1
+
   loading.value = true
   try {
-    const res = await getList()
-    instruments.value = Array.isArray(res) ? res : []
+    const res = await getList({ ...listQuery.value, page: page.value, pageSize: 20 })
+    total.value = res.total || 0
+    instruments.value = reset ? (res.list || []) : [...instruments.value, ...(res.list || [])]
   } catch (e) {
     console.error('加载设备失败', e)
-    instruments.value = []
+    if (reset) instruments.value = []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(loadInstruments)
+const refreshInstruments = () => loadInstruments({ reset: true })
+
+const applyQuery = query => {
+  listQuery.value = query
+  loadInstruments({ reset: true })
+}
+
+const loadMore = () => {
+  if (instruments.value.length >= total.value) return
+
+  page.value += 1
+  loadInstruments({ reset: false })
+}
+
+onMounted(refreshInstruments)
 </script>
 
 <style scoped>

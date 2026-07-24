@@ -32,7 +32,7 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :icon="Search" :loading="loading" @click="load">查询</el-button>
+        <el-button type="primary" :icon="Search" :loading="loading" @click="search">查询</el-button>
         <el-button :icon="Refresh" @click="reset">重置</el-button>
       </el-form-item>
     </el-form>
@@ -66,6 +66,17 @@
       <el-table-column prop="target_label" label="操作对象" min-width="200" show-overflow-tooltip />
       <el-table-column prop="ip" label="IP" width="140" show-overflow-tooltip />
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        layout="total, prev, pager, next"
+        background
+        @current-change="load"
+      />
+    </div>
 
     <el-empty v-if="!loading && logs.length === 0" description="暂无日志" />
 
@@ -132,6 +143,14 @@ const loading = ref(false)
 const detailVisible = ref(false)
 const current = ref(null)
 const dateRange = ref(null)
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+
+const search = () => {
+  page.value = 1
+  load()
+}
 
 const query = reactive({
   module: '',
@@ -155,12 +174,14 @@ const prettyDetail = computed(() => {
 const load = async () => {
   loading.value = true
   try {
-    const params = { ...query }
+    const params = { ...query, page: page.value, pageSize: pageSize.value }
 
     if (dateRange.value?.[0]) params.start = dateRange.value[0]
     if (dateRange.value?.[1]) params.end = dateRange.value[1]
 
-    logs.value = await getAuditLogs(params)
+    const res = await getAuditLogs(params)
+    logs.value = res.list || []
+    total.value = res.total || 0
   } finally {
     loading.value = false
   }
@@ -172,6 +193,7 @@ const reset = () => {
   query.actor = ''
   query.keyword = ''
   dateRange.value = null
+  page.value = 1
   load()
 }
 
@@ -186,6 +208,12 @@ onMounted(load)
 <style scoped>
 .log-filters {
   margin-bottom: 4px;
+}
+
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .actor-username {

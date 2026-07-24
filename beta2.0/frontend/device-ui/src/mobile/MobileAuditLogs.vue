@@ -30,6 +30,12 @@
       <el-empty v-if="!loading && logs.length === 0" description="暂无日志" />
     </div>
 
+    <div v-if="logs.length < total" class="m-more">
+      <el-button text type="primary" :loading="loading" @click="loadMore">
+        加载更多（{{ logs.length }} / {{ total }}）
+      </el-button>
+    </div>
+
     <el-drawer v-model="filterVisible" title="筛选条件" direction="btt" size="72%">
       <el-form label-position="top">
         <el-form-item label="模块">
@@ -89,6 +95,8 @@ import {
 
 const logs = ref([])
 const loading = ref(false)
+const total = ref(0)
+const page = ref(1)
 const filterVisible = ref(false)
 const detailVisible = ref(false)
 const current = ref(null)
@@ -115,13 +123,24 @@ const prettyDetail = computed(() => {
   }
 })
 
-const load = async () => {
+const load = async ({ reset = true } = {}) => {
+  if (reset) page.value = 1
+
   loading.value = true
   try {
-    logs.value = await getAuditLogs({ ...query })
+    const res = await getAuditLogs({ ...query, page: page.value, pageSize: 20 })
+    total.value = res.total || 0
+    logs.value = reset ? (res.list || []) : [...logs.value, ...(res.list || [])]
   } finally {
     loading.value = false
   }
+}
+
+const loadMore = () => {
+  if (logs.value.length >= total.value) return
+
+  page.value += 1
+  load({ reset: false })
 }
 
 const applyFilter = () => {
@@ -178,6 +197,11 @@ onMounted(load)
 .m-log-cards {
   padding: 0 12px 12px;
   min-height: 40vh;
+}
+
+.m-more {
+  text-align: center;
+  padding: 4px 0 16px;
 }
 
 .m-log-card {

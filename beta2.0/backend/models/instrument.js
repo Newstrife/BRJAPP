@@ -70,7 +70,13 @@ const Instrument = sequelize.define('instrument', {
 }, {
   tableName: 'instrument',
   underscored: true,
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    { fields: ['name'] },
+    { fields: ['status'] },
+    { fields: ['calibration_status'] },
+    { fields: ['next_calibration_date'] }
+  ]
 });
 
 module.exports = Instrument;
