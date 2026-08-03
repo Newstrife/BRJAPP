@@ -1,6 +1,7 @@
 import request from '../utils/request'
 
 export const getList = (query) => request.get('/instruments', { params: query })
+export const getStats = () => request.get('/instruments/stats')
 export const useDevice = (id, data) => request.post(`/instruments/${id}/use`, data)
 export const returnDevice = (id) => request.post(`/instruments/${id}/return`)
 export const exportExcel = (query) => request.get('/instruments/export', { params: query, responseType: 'blob' })

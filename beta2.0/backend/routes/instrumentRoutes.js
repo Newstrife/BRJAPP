@@ -8,6 +8,7 @@ router.use(requireAuth);
 
 router.post('/', requireAdmin, ctrl.create);
 router.get('/', ctrl.list);
+router.get('/stats', ctrl.stats);
 router.get('/export', requireAdmin, ctrl.exportExcel);
 router.post('/check-calibration', ctrl.checkCalibration);
 router.post('/import', requireAdmin, uploadSingle('file', 'uploads/', ['.xlsx', '.xls']), ctrl.importExcel);

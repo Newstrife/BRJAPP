@@ -20,6 +20,15 @@
       <el-form-item label="部门">
         <el-input v-model="query.department" placeholder="所属部门" clearable />
       </el-form-item>
+      <el-form-item label="计量状态">
+        <el-select v-model="query.calibration_status" placeholder="全部" clearable>
+          <el-option label="未校准" value="uncalibrated" />
+          <el-option label="正常" value="normal" />
+          <el-option label="即将到期" value="due_soon" />
+          <el-option label="已过期" value="expired" />
+          <el-option label="校准不合格" value="failed" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" :icon="Search" @click="search">搜索</el-button>
         <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
@@ -27,6 +36,7 @@
         <el-upload v-if="isAdmin" :show-file-list="false" :http-request="uploadExcel" accept=".xlsx,.xls">
           <el-button :icon="Upload">导入 Excel</el-button>
         </el-upload>
+        <el-button v-if="isAdmin" :icon="Document" @click="downloadTemplate">下载模板</el-button>
         <el-button v-if="isAdmin" :icon="Download" @click="exportExcelFile">导出</el-button>
       </el-form-item>
     </el-form>
@@ -146,9 +156,9 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Plus, Upload, Download } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Upload, Download, Document } from '@element-plus/icons-vue'
 import {
   getList,
   deleteInstrument,
@@ -160,6 +170,7 @@ import {
 import InstrumentForm from '../components/InstrumentForm.vue'
 import CalibrationRecords from '../components/CalibrationRecords.vue'
 import { useIsMobile } from '../utils/useIsMobile'
+import { pendingInstrumentFilter } from '../utils/dashboardFilter'
 
 const list = ref([])
 const loading = ref(false)
@@ -172,7 +183,8 @@ const query = reactive({
   name: '',
   usage_notes: '',
   location: '',
-  department: ''
+  department: '',
+  calibration_status: ''
 })
 const showAdd = ref(false)
 const detailVisible = ref(false)
@@ -270,9 +282,22 @@ const resetQuery = async () => {
   query.usage_notes = ''
   query.location = ''
   query.department = ''
+  query.calibration_status = ''
   page.value = 1
   await loadData()
 }
+
+// 看板卡片跳转：清空其他条件，按计量状态筛选
+watch(() => pendingInstrumentFilter.ts, () => {
+  query.code = ''
+  query.name = ''
+  query.usage_notes = ''
+  query.location = ''
+  query.department = ''
+  query.calibration_status = pendingInstrumentFilter.calibration_status
+  page.value = 1
+  loadData()
+})
 
 const handleFormSuccess = async () => {
   showAdd.value = false
@@ -388,6 +413,13 @@ const exportExcelFile = async () => {
   } catch (e) {
     console.error('导出失败', e)
   }
+}
+
+const downloadTemplate = () => {
+  const link = document.createElement('a')
+  link.href = '/templates/device-import-template.xlsx'
+  link.download = '设备导入模板.xlsx'
+  link.click()
 }
 
 onMounted(loadData)

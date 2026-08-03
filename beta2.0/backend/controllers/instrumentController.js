@@ -4,6 +4,7 @@ const audit = require('../services/auditService');
 const { success, fail } = require('../utils/response');
 const Instrument = require('../models/instrument');
 const scheduler = require('../jobs/scheduler');
+const { Op } = require('sequelize');
 const fs = require('fs');
 
 const buildInstrumentPayload = (body) => ({
@@ -231,6 +232,35 @@ exports.list = async (req, res) => {
   try {
     const data = await service.list(req.query);
     success(res, data);
+  } catch (err) {
+    fail(res, err.message);
+  }
+};
+
+exports.stats = async (req, res) => {
+  try {
+    const rows = await Instrument.findAll({
+      attributes: [
+        'calibration_status',
+        [Instrument.sequelize.fn('COUNT', Instrument.sequelize.col('id')), 'count']
+      ],
+      group: ['calibration_status'],
+      raw: true
+    });
+
+    const byStatus = Object.fromEntries(
+      rows.map(row => [row.calibration_status, Number(row.count)])
+    );
+
+    const total = await Instrument.count();
+
+    const attention = await Instrument.findAll({
+      where: { calibration_status: { [Op.in]: ['due_soon', 'expired'] } },
+      order: [['next_calibration_date', 'ASC']],
+      limit: 10
+    });
+
+    success(res, { total, byStatus, attention });
   } catch (err) {
     fail(res, err.message);
   }

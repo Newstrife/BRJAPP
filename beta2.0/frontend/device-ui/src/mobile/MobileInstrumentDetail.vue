@@ -14,7 +14,7 @@
           <el-tag :type="calibrationTag(instrument.calibration_status)" effect="light">
             {{ calibrationText(instrument.calibration_status) }}
           </el-tag>
-          <el-tag :type="deviceStatusTag(instrument.status)" effect="plain">
+          <el-tag v-if="['repair', 'scrapped'].includes(instrument.status)" :type="deviceStatusTag(instrument.status)" effect="plain">
             {{ deviceStatusText(instrument.status) }}
           </el-tag>
         </div>
@@ -31,7 +31,6 @@
         <div class="m-row"><span class="m-key">所属部门</span>{{ instrument.department || '-' }}</div>
         <div class="m-row"><span class="m-key">责任人</span>{{ instrument.owner || '-' }}</div>
         <div class="m-row"><span class="m-key">固定资产编号</span>{{ instrument.asset_code || '-' }}</div>
-        <div class="m-row"><span class="m-key">当前使用人</span>{{ instrument.borrower || '-' }}</div>
       </div>
 
       <div class="m-section">

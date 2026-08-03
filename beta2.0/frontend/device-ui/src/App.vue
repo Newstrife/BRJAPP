@@ -39,6 +39,9 @@
 
     <main class="app-main">
       <el-tabs v-model="activeTab" class="app-tabs">
+        <el-tab-pane label="看板" name="dashboard">
+          <Dashboard :active="activeTab === 'dashboard'" @go-instruments="activeTab = 'instruments'" />
+        </el-tab-pane>
         <el-tab-pane label="设备列表" name="instruments">
           <InstrumentList />
         </el-tab-pane>
@@ -76,6 +79,7 @@ import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, Lock, SwitchButton } from '@element-plus/icons-vue'
 import LoginView from './views/LoginView.vue'
+import Dashboard from './views/Dashboard.vue'
 import InstrumentList from './views/InstrumentList.vue'
 import AccountManager from './views/AccountManager.vue'
 import WecomSettings from './views/WecomSettings.vue'
@@ -87,7 +91,7 @@ import { changePassword } from './api/user'
 const savedUser = localStorage.getItem('auth_user')
 const user = ref(savedUser ? JSON.parse(savedUser) : null)
 const isMobile = useIsMobile()
-const activeTab = ref('instruments')
+const activeTab = ref('dashboard')
 const passwordVisible = ref(false)
 const passwordForm = reactive({
   oldPassword: '',
@@ -100,7 +104,7 @@ const userInitial = computed(() =>
 
 const handleLogin = data => {
   user.value = data
-  activeTab.value = 'instruments'
+  activeTab.value = 'dashboard'
 }
 
 const logout = () => {

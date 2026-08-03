@@ -26,13 +26,15 @@
         <div class="m-card-row">
           <span class="m-label">位置</span>{{ item.location || '-' }}<template v-if="item.department"> · {{ item.department }}</template>
         </div>
-        <div class="m-card-row">
+        <div v-if="['repair', 'scrapped'].includes(item.status)" class="m-card-row">
           <span class="m-label">状态</span>
           <el-tag size="small" :type="deviceStatusTag(item.status)" effect="plain">
             {{ deviceStatusText(item.status) }}
           </el-tag>
-          <span v-if="item.locked" class="m-lock">已锁定{{ item.lock_reason ? `：${item.lock_reason}` : '' }}</span>
-          <span v-else-if="item.borrower" class="m-borrower">{{ item.borrower }}</span>
+        </div>
+        <div v-if="item.locked" class="m-card-row">
+          <span class="m-label">锁定</span>
+          <span class="m-lock">{{ item.lock_reason || '已锁定' }}</span>
         </div>
       </div>
 
