@@ -82,9 +82,10 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import { Search, Filter, Refresh } from '@element-plus/icons-vue'
 import { useBackToClose } from '../utils/useBackToClose'
+import { pendingMobileFilter } from '../utils/dashboardFilter'
 import {
   calibrationText,
   calibrationTag,
@@ -142,6 +143,22 @@ const resetFilters = () => {
   filterVisible.value = false
   emitQuery()
 }
+
+// 看板卡片跳转：清空其他条件，按计量状态筛选
+const applyExternalFilter = () => {
+  keyword.value = ''
+  filters.location = ''
+  filters.department = ''
+  filters.status = ''
+  filters.calibration_status = pendingMobileFilter.calibration_status
+  emitQuery()
+}
+
+watch(() => pendingMobileFilter.ts, applyExternalFilter)
+
+onMounted(() => {
+  if (pendingMobileFilter.ts) applyExternalFilter()
+})
 </script>
 
 <style scoped>

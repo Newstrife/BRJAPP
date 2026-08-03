@@ -5,8 +5,13 @@
     </header>
 
     <main class="m-body">
+      <MobileDashboard
+        v-if="tab === 'dashboard'"
+        @filter="onDashFilter"
+        @open="openDetail"
+      />
       <MobileInstrumentList
-        v-if="tab === 'instruments'"
+        v-else-if="tab === 'instruments'"
         :list="instruments"
         :loading="loading"
         :total="total"
@@ -16,10 +21,19 @@
         @load-more="loadMore"
       />
       <MobileAuditLogs v-else-if="tab === 'audit'" />
-      <MobileProfile v-else :user="user" @logout="$emit('logout')" />
+      <MobileProfile v-else-if="tab === 'mine'" :user="user" @logout="$emit('logout')" />
     </main>
 
     <nav class="m-tabbar">
+      <button
+        class="m-tab"
+        :class="{ active: tab === 'dashboard' }"
+        type="button"
+        @click="tab = 'dashboard'"
+      >
+        <el-icon><Odometer /></el-icon>
+        <span>看板</span>
+      </button>
       <button
         class="m-tab"
         :class="{ active: tab === 'instruments' }"
@@ -69,9 +83,11 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { Monitor, Document, User } from '@element-plus/icons-vue'
+import { Monitor, Document, User, Odometer } from '@element-plus/icons-vue'
 import { getList } from '../api/instrument'
 import { pushLayer, back } from '../utils/backStack'
+import { pendingMobileFilter } from '../utils/dashboardFilter'
+import MobileDashboard from './MobileDashboard.vue'
 import MobileInstrumentList from './MobileInstrumentList.vue'
 import MobileInstrumentDetail from './MobileInstrumentDetail.vue'
 import MobileCalibrationRecords from './MobileCalibrationRecords.vue'
@@ -84,7 +100,7 @@ const props = defineProps({
 
 defineEmits(['logout'])
 
-const tab = ref('instruments')
+const tab = ref('dashboard')
 const instruments = ref([])
 const loading = ref(false)
 const total = ref(0)
@@ -96,10 +112,17 @@ const recordsInstrument = ref(null)
 const canAudit = computed(() => ['admin', 'auditor'].includes(props.user.role))
 
 const title = computed(() => ({
+  dashboard: '看板',
   instruments: '设备列表',
   audit: '审计日志',
   mine: '我的'
 }[tab.value]))
+
+const onDashFilter = status => {
+  pendingMobileFilter.calibration_status = status
+  pendingMobileFilter.ts = Date.now()
+  tab.value = 'instruments'
+}
 
 const selectedInstrument = computed(() =>
   instruments.value.find(item => item.id === selectedId.value) || null
