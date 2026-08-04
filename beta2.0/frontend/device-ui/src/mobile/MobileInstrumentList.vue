@@ -59,16 +59,17 @@
           <el-select v-model="filters.calibration_status" placeholder="全部" clearable style="width: 100%">
             <el-option label="未校准" value="uncalibrated" />
             <el-option label="正常" value="normal" />
+            <el-option label="已计量未验证" value="calibrated_unverified" />
             <el-option label="即将到期" value="due_soon" />
             <el-option label="已过期" value="expired" />
             <el-option label="校准不合格" value="failed" />
           </el-select>
         </el-form-item>
-        <el-form-item label="使用状态">
+        <el-form-item label="设备状态">
           <el-select v-model="filters.status" placeholder="全部" clearable style="width: 100%">
-            <el-option label="空闲" value="idle" />
-            <el-option label="使用中" value="in_use" />
-            <el-option label="维修中" value="repair" />
+            <el-option label="正常" value="normal" />
+            <el-option label="维修" value="repair" />
+            <el-option label="暂停" value="paused" />
             <el-option label="报废" value="scrapped" />
           </el-select>
         </el-form-item>
@@ -149,7 +150,7 @@ const applyExternalFilter = () => {
   keyword.value = ''
   filters.location = ''
   filters.department = ''
-  filters.status = ''
+  filters.status = pendingMobileFilter.status || ''
   filters.calibration_status = pendingMobileFilter.calibration_status
   emitQuery()
 }

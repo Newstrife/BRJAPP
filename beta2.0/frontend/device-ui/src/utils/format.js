@@ -1,6 +1,7 @@
 export const calibrationText = status => ({
   uncalibrated: '未校准',
   normal: '正常',
+  calibrated_unverified: '已计量未验证',
   due_soon: '即将到期',
   expired: '已过期',
   failed: '校准不合格'
@@ -9,6 +10,7 @@ export const calibrationText = status => ({
 export const calibrationTag = status => ({
   uncalibrated: 'info',
   normal: 'success',
+  calibrated_unverified: 'warning',
   due_soon: 'warning',
   expired: 'danger',
   failed: 'danger'

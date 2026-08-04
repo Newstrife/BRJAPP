@@ -128,8 +128,9 @@ const title = computed(() => ({
   mine: '我的'
 }[tab.value]))
 
-const onDashFilter = status => {
-  pendingMobileFilter.calibration_status = status
+const onDashFilter = card => {
+  pendingMobileFilter.calibration_status = card.calibrationStatus || ''
+  pendingMobileFilter.status = card.status || ''
   pendingMobileFilter.ts = Date.now()
   tab.value = 'instruments'
 }

@@ -10,7 +10,22 @@
         :key="card.key"
         class="m-stat-card"
         type="button"
-        @click="$emit('filter', card.status)"
+        @click="$emit('filter', card)"
+      >
+        <span class="m-stat-bar" :style="{ background: card.color }" />
+        <div class="m-stat-value" :style="{ color: card.color }">{{ card.value }}</div>
+        <div class="m-stat-label">{{ card.label }}</div>
+      </button>
+    </div>
+
+    <h3 class="m-section-title">设备状态</h3>
+    <div class="m-stat-grid">
+      <button
+        v-for="card in deviceCards"
+        :key="card.key"
+        class="m-stat-card"
+        type="button"
+        @click="$emit('filter', card)"
       >
         <span class="m-stat-bar" :style="{ background: card.color }" />
         <div class="m-stat-value" :style="{ color: card.color }">{{ card.value }}</div>
@@ -60,15 +75,24 @@ defineEmits(['filter', 'open'])
 const loading = ref(false)
 const total = ref(0)
 const byStatus = ref({})
+const byDeviceStatus = ref({})
 const attention = ref([])
 
 const cards = computed(() => [
-  { key: 'total', label: '设备总数', value: total.value, color: '#305496', status: '' },
-  { key: 'normal', label: '计量正常', value: byStatus.value.normal || 0, color: '#2e9e5b', status: 'normal' },
-  { key: 'due_soon', label: '即将到期', value: byStatus.value.due_soon || 0, color: '#d9852b', status: 'due_soon' },
-  { key: 'expired', label: '已过期', value: byStatus.value.expired || 0, color: '#d0453e', status: 'expired' },
-  { key: 'failed', label: '校准不合格', value: byStatus.value.failed || 0, color: '#8e44ad', status: 'failed' },
-  { key: 'uncalibrated', label: '未校准', value: byStatus.value.uncalibrated || 0, color: '#6b7280', status: 'uncalibrated' }
+  { key: 'total', label: '设备总数', value: total.value, color: '#305496', calibrationStatus: '' },
+  { key: 'normal', label: '计量正常', value: byStatus.value.normal || 0, color: '#2e9e5b', calibrationStatus: 'normal' },
+  { key: 'calibrated_unverified', label: '已计量未验证', value: byStatus.value.calibrated_unverified || 0, color: '#c55a11', calibrationStatus: 'calibrated_unverified' },
+  { key: 'due_soon', label: '即将到期', value: byStatus.value.due_soon || 0, color: '#d9852b', calibrationStatus: 'due_soon' },
+  { key: 'expired', label: '已过期', value: byStatus.value.expired || 0, color: '#d0453e', calibrationStatus: 'expired' },
+  { key: 'failed', label: '校准不合格', value: byStatus.value.failed || 0, color: '#8e44ad', calibrationStatus: 'failed' },
+  { key: 'uncalibrated', label: '未校准', value: byStatus.value.uncalibrated || 0, color: '#6b7280', calibrationStatus: 'uncalibrated' }
+])
+
+const deviceCards = computed(() => [
+  { key: 'normal', label: '正常', value: byDeviceStatus.value.normal || 0, color: '#2e9e5b', status: 'normal' },
+  { key: 'repair', label: '维修', value: byDeviceStatus.value.repair || 0, color: '#d9852b', status: 'repair' },
+  { key: 'paused', label: '暂停', value: byDeviceStatus.value.paused || 0, color: '#6b7280', status: 'paused' },
+  { key: 'scrapped', label: '报废', value: byDeviceStatus.value.scrapped || 0, color: '#d0453e', status: 'scrapped' }
 ])
 
 const daysLeft = row => {
@@ -97,6 +121,7 @@ const load = async () => {
     const res = await getStats()
     total.value = res.total || 0
     byStatus.value = res.byStatus || {}
+    byDeviceStatus.value = res.byDeviceStatus || {}
     attention.value = res.attention || []
   } finally {
     loading.value = false

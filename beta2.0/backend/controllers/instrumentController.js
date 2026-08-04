@@ -263,6 +263,19 @@ exports.stats = async (req, res) => {
       rows.map(row => [row.calibration_status, Number(row.count)])
     );
 
+    const statusRows = await Instrument.findAll({
+      attributes: [
+        'status',
+        [Instrument.sequelize.fn('COUNT', Instrument.sequelize.col('id')), 'count']
+      ],
+      group: ['status'],
+      raw: true
+    });
+
+    const byDeviceStatus = Object.fromEntries(
+      statusRows.map(row => [row.status, Number(row.count)])
+    );
+
     const total = await Instrument.count();
 
     const attention = await Instrument.findAll({
@@ -271,7 +284,7 @@ exports.stats = async (req, res) => {
       limit: 10
     });
 
-    success(res, { total, byStatus, attention });
+    success(res, { total, byStatus, byDeviceStatus, attention });
   } catch (err) {
     fail(res, err.message);
   }

@@ -20,10 +20,19 @@
       <el-form-item label="部门">
         <el-input v-model="query.department" placeholder="所属部门" clearable />
       </el-form-item>
+      <el-form-item label="设备状态">
+        <el-select v-model="query.status" placeholder="全部" clearable>
+          <el-option label="正常" value="normal" />
+          <el-option label="维修" value="repair" />
+          <el-option label="暂停" value="paused" />
+          <el-option label="报废" value="scrapped" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="计量/验证状态">
         <el-select v-model="query.calibration_status" placeholder="全部" clearable>
           <el-option label="未校准" value="uncalibrated" />
           <el-option label="正常" value="normal" />
+          <el-option label="已计量未验证" value="calibrated_unverified" />
           <el-option label="即将到期" value="due_soon" />
           <el-option label="已过期" value="expired" />
           <el-option label="校准不合格" value="failed" />
@@ -144,6 +153,7 @@
           <el-select v-model="editForm.calibration_status">
             <el-option label="未校准" value="uncalibrated" />
             <el-option label="正常" value="normal" />
+            <el-option label="已计量未验证" value="calibrated_unverified" />
             <el-option label="即将到期" value="due_soon" />
             <el-option label="已过期" value="expired" />
             <el-option label="校准不合格" value="failed" />
@@ -228,6 +238,7 @@ const query = reactive({
   usage_notes: '',
   location: '',
   department: '',
+  status: '',
   calibration_status: ''
 })
 const showAdd = ref(false)
@@ -332,6 +343,7 @@ const resetQuery = async () => {
   query.usage_notes = ''
   query.location = ''
   query.department = ''
+  query.status = ''
   query.calibration_status = ''
   page.value = 1
   await loadData()
@@ -344,6 +356,7 @@ watch(() => pendingInstrumentFilter.ts, () => {
   query.usage_notes = ''
   query.location = ''
   query.department = ''
+  query.status = pendingInstrumentFilter.status || ''
   query.calibration_status = pendingInstrumentFilter.calibration_status
   page.value = 1
   loadData()

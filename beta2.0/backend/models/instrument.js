@@ -55,6 +55,7 @@ const Instrument = sequelize.define('instrument', {
     type: DataTypes.ENUM(
       'uncalibrated',
       'normal',
+      'calibrated_unverified',
       'due_soon',
       'expired',
       'failed'

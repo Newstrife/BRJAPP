@@ -39,6 +39,11 @@ exports.resolveCalibrationStatus = (result, mode, verification) => {
     };
   }
 
+  // "计量+验证"设备：计量合格但尚未验证 → 已计量未验证
+  if (mode === 'calibration_verification' && result === '合格' && verification !== 'passed') {
+    return { status: 'calibrated_unverified', lockReason: null };
+  }
+
   return { status: 'normal', lockReason: null };
 };
 

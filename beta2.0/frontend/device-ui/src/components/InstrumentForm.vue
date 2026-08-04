@@ -49,6 +49,7 @@
         <el-select v-model="form.calibration_status" placeholder="选择状态">
           <el-option label="未校准" value="uncalibrated" />
           <el-option label="正常" value="normal" />
+          <el-option label="已计量未验证" value="calibrated_unverified" />
           <el-option label="即将到期" value="due_soon" />
           <el-option label="已过期" value="expired" />
           <el-option label="校准不合格" value="failed" />
