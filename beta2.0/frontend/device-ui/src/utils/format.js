@@ -1,11 +1,21 @@
-export const calibrationText = status => ({
-  uncalibrated: '未校准',
-  normal: '正常',
-  calibrated_unverified: '已计量未验证',
-  due_soon: '即将到期',
-  expired: '已过期',
-  failed: '校准不合格'
-}[status] || status)
+// 文案随校准方式/失败原因区分：计量设备不出现"已计量未验证"，
+// 失败时按锁定原因显示"计量不合格/验证不合格"
+export const calibrationText = (status, mode, lockReason) => {
+  if (status === 'failed') {
+    if (lockReason === '验证不合格') return '验证不合格'
+    if (lockReason === '校准不合格') return '计量不合格'
+
+    return mode === 'calibration' ? '计量不合格' : '不合格'
+  }
+
+  return ({
+    uncalibrated: '未计量',
+    normal: '正常',
+    calibrated_unverified: '已计量未验证',
+    due_soon: '即将到期',
+    expired: '已过期'
+  })[status] || status
+}
 
 export const calibrationTag = status => ({
   uncalibrated: 'info',

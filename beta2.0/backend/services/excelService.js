@@ -80,12 +80,14 @@ const normalizeVerificationResult = value => {
 const normalizeCalibrationStatus = value => {
   const map = {
     未校准: 'uncalibrated',
+    未计量: 'uncalibrated',
     正常: 'normal',
     合格: 'normal',
     已计量未验证: 'calibrated_unverified',
     即将到期: 'due_soon',
     已过期: 'expired',
     校准不合格: 'failed',
+    不合格: 'failed',
     不合格: 'failed',
     校验失败: 'failed',
     验证失败: 'failed'

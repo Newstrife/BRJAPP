@@ -45,7 +45,7 @@
         <div class="m-att-head">
           <span class="m-att-name">{{ item.name || '未命名设备' }}</span>
           <el-tag size="small" :type="calibrationTag(item.calibration_status)" effect="light">
-            {{ calibrationText(item.calibration_status) }}
+            {{ calibrationText(item.calibration_status, item.calibration_mode, item.lock_reason) }}
           </el-tag>
         </div>
         <div class="m-att-row">

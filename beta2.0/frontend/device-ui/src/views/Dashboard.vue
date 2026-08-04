@@ -49,7 +49,7 @@
       <el-table-column label="计量状态" width="110" align="center">
         <template #default="scope">
           <el-tag :type="calibrationTag(scope.row.calibration_status)" effect="light">
-            {{ calibrationText(scope.row.calibration_status) }}
+            {{ calibrationText(scope.row.calibration_status, scope.row.calibration_mode, scope.row.lock_reason) }}
           </el-tag>
         </template>
       </el-table-column>

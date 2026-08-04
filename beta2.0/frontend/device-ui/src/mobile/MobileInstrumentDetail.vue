@@ -12,7 +12,7 @@
         <div class="m-hero-code">{{ instrument.code || '-' }}</div>
         <div class="m-hero-tags">
           <el-tag :type="calibrationTag(instrument.calibration_status)" effect="light">
-            {{ calibrationText(instrument.calibration_status) }}
+            {{ calibrationText(instrument.calibration_status, instrument.calibration_mode, instrument.lock_reason) }}
           </el-tag>
           <el-tag v-if="['repair', 'paused', 'scrapped'].includes(instrument.status)" :type="deviceStatusTag(instrument.status)" effect="plain">
             {{ deviceStatusText(instrument.status) }}

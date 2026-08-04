@@ -17,7 +17,7 @@
         <div class="m-card-head">
           <span class="m-card-name">{{ item.name || '未命名设备' }}</span>
           <el-tag size="small" :type="calibrationTag(item.calibration_status)" effect="light">
-            {{ calibrationText(item.calibration_status) }}
+            {{ calibrationText(item.calibration_status, item.calibration_mode, item.lock_reason) }}
           </el-tag>
         </div>
         <div class="m-card-row">
@@ -26,7 +26,7 @@
         <div class="m-card-row">
           <span class="m-label">位置</span>{{ item.location || '-' }}<template v-if="item.department"> · {{ item.department }}</template>
         </div>
-        <div v-if="['repair', 'paused', 'scrapped'].includes(item.status)" class="m-card-row">
+        <div class="m-card-row">
           <span class="m-label">状态</span>
           <el-tag size="small" :type="deviceStatusTag(item.status)" effect="plain">
             {{ deviceStatusText(item.status) }}
@@ -57,12 +57,12 @@
         </el-form-item>
         <el-form-item label="计量状态">
           <el-select v-model="filters.calibration_status" placeholder="全部" clearable style="width: 100%">
-            <el-option label="未校准" value="uncalibrated" />
+            <el-option label="未计量" value="uncalibrated" />
             <el-option label="正常" value="normal" />
             <el-option label="已计量未验证" value="calibrated_unverified" />
             <el-option label="即将到期" value="due_soon" />
             <el-option label="已过期" value="expired" />
-            <el-option label="校准不合格" value="failed" />
+            <el-option label="不合格" value="failed" />
           </el-select>
         </el-form-item>
         <el-form-item label="设备状态">

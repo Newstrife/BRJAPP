@@ -30,12 +30,12 @@
       </el-form-item>
       <el-form-item label="计量/验证状态">
         <el-select v-model="query.calibration_status" placeholder="全部" clearable>
-          <el-option label="未校准" value="uncalibrated" />
+          <el-option label="未计量" value="uncalibrated" />
           <el-option label="正常" value="normal" />
           <el-option label="已计量未验证" value="calibrated_unverified" />
           <el-option label="即将到期" value="due_soon" />
           <el-option label="已过期" value="expired" />
-          <el-option label="校准不合格" value="failed" />
+          <el-option label="不合格" value="failed" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -58,10 +58,17 @@
       <el-table-column prop="department" label="所属部门" min-width="110" show-overflow-tooltip />
       <el-table-column prop="owner" label="责任人" min-width="90" show-overflow-tooltip />
       <el-table-column prop="next_calibration_date" label="下次计量时间" width="120" />
+      <el-table-column label="设备状态" width="90" align="center">
+        <template #default="scope">
+          <el-tag :type="deviceStatusTag(scope.row.status)" effect="plain">
+            {{ deviceStatusText(scope.row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="计量/验证状态" width="130" align="center">
         <template #default="scope">
           <el-tag :type="calibrationTag(scope.row.calibration_status)" effect="light">
-            {{ calibrationText(scope.row.calibration_status) }}
+            {{ calibrationText(scope.row.calibration_status, scope.row.calibration_mode, scope.row.lock_reason) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -107,7 +114,7 @@
         <el-descriptions-item label="责任人">{{ detail.owner }}</el-descriptions-item>
         <el-descriptions-item label="固定资产编号">{{ detail.asset_code }}</el-descriptions-item>
         <el-descriptions-item label="设备状态">{{ deviceStatusText(detail.status) }}</el-descriptions-item>
-        <el-descriptions-item label="计量/验证状态">{{ calibrationText(detail.calibration_status) }}</el-descriptions-item>
+        <el-descriptions-item label="计量/验证状态">{{ calibrationText(detail.calibration_status, detail.calibration_mode, detail.lock_reason) }}</el-descriptions-item>
         <el-descriptions-item label="校准方式">{{ calibrationModeText(detail.calibration_mode) }}</el-descriptions-item>
         <el-descriptions-item label="验证情况">{{ verificationResultText(detail.verification_result) }}</el-descriptions-item>
         <el-descriptions-item label="下次验证日期">{{ detail.next_verification_date || '-' }}</el-descriptions-item>
@@ -151,12 +158,12 @@
         </el-form-item>
         <el-form-item label="计量/验证状态">
           <el-select v-model="editForm.calibration_status">
-            <el-option label="未校准" value="uncalibrated" />
+            <el-option label="未计量" value="uncalibrated" />
             <el-option label="正常" value="normal" />
             <el-option label="已计量未验证" value="calibrated_unverified" />
             <el-option label="即将到期" value="due_soon" />
             <el-option label="已过期" value="expired" />
-            <el-option label="校准不合格" value="failed" />
+            <el-option label="不合格" value="failed" />
           </el-select>
         </el-form-item>
         <el-form-item label="校准方式">
@@ -224,7 +231,7 @@ import CalibrationRecords from '../components/CalibrationRecords.vue'
 import VerificationRecords from '../components/VerificationRecords.vue'
 import { useIsMobile } from '../utils/useIsMobile'
 import { pendingInstrumentFilter } from '../utils/dashboardFilter'
-import { calibrationModeText, verificationResultText, deviceStatusText } from '../utils/format'
+import { calibrationModeText, verificationResultText, deviceStatusText, deviceStatusTag } from '../utils/format'
 
 const list = ref([])
 const loading = ref(false)
@@ -292,22 +299,6 @@ const formatDate = value => {
   const date = new Date(value)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
-
-const calibrationText = status => ({
-  uncalibrated: '未校准',
-  normal: '正常',
-  due_soon: '即将到期',
-  expired: '已过期',
-  failed: '校准不合格'
-}[status] || status)
-
-const calibrationTag = status => ({
-  uncalibrated: 'info',
-  normal: 'success',
-  due_soon: 'warning',
-  expired: 'danger',
-  failed: 'danger'
-}[status] || 'info')
 
 const toPayload = form => ({
   ...form,
