@@ -22,41 +22,75 @@ const checkCalibrationDates = async () => {
   const list = await Instrument.findAll();
 
   for (const item of list) {
-    if (!item.next_calibration_date) continue;
+    const targetLabel = `${item.code || ''} ${item.name || ''}`.trim();
 
-    const diff = daysUntil(item.next_calibration_date);
-    const reminderDate = dateOnly(item.next_calibration_date);
+    // 计量到期检查
+    if (item.next_calibration_date) {
+      const diff = daysUntil(item.next_calibration_date);
+      const reminderDate = dateOnly(item.next_calibration_date);
 
-    if (diff < 0) {
-      item.calibration_status = 'expired';
-      item.locked = true;
-      item.lock_reason = '超期';
-      await item.save();
+      if (diff < 0) {
+        item.calibration_status = 'expired';
+        item.locked = true;
+        item.lock_reason = '计量超期';
+        await item.save();
 
-      await audit.record(null, {
-        module: 'instrument',
-        action: 'lock',
-        targetId: item.id,
-        targetLabel: `${item.code || ''} ${item.name || ''}`.trim(),
-        detail: { reason: '校准超期，自动锁定', next_calibration_date: reminderDate }
-      });
-      continue;
+        await audit.record(null, {
+          module: 'instrument',
+          action: 'lock',
+          targetId: item.id,
+          targetLabel,
+          detail: { reason: '计量超期，自动锁定', next_calibration_date: reminderDate }
+        });
+      } else if (diff <= 10) {
+        if (item.calibration_status !== 'due_soon') {
+          item.calibration_status = 'due_soon';
+          await item.save();
+        }
+
+        if (item.calibration_reminder_for_date !== reminderDate) {
+          try {
+            await wecom.sendMessage(
+              `【计量到期提醒】设备名称：${item.name || '-'}，设备编号：${item.code || '-'}，计量到期日期：${reminderDate}，剩余 ${diff} 天，请及时安排计量。`
+            );
+            item.calibration_reminder_for_date = reminderDate;
+            await item.save();
+          } catch (err) {
+            console.error('企业微信发送失败:', err.message);
+          }
+        }
+      }
     }
 
-    if (diff <= 10) {
-      if (item.calibration_status !== 'due_soon') {
-        item.calibration_status = 'due_soon';
-        await item.save();
-      }
+    // 验证到期检查（仅校准方式为"计量+验证"的设备）
+    if (item.calibration_mode === 'calibration_verification' && item.next_verification_date) {
+      const diff = daysUntil(item.next_verification_date);
+      const reminderDate = dateOnly(item.next_verification_date);
 
-      if (item.calibration_reminder_for_date === reminderDate) continue;
+      if (diff < 0) {
+        if (!item.locked) {
+          item.locked = true;
+          item.lock_reason = '验证超期';
+          await item.save();
 
-      try {
-        await wecom.sendMessage(`设备 ${item.name} 验证即将过期`);
-        item.calibration_reminder_for_date = reminderDate;
-        await item.save();
-      } catch (err) {
-        console.error('企业微信发送失败:', err.message);
+          await audit.record(null, {
+            module: 'instrument',
+            action: 'lock',
+            targetId: item.id,
+            targetLabel,
+            detail: { reason: '验证超期，自动锁定', next_verification_date: reminderDate }
+          });
+        }
+      } else if (diff <= 10 && item.verification_reminder_for_date !== reminderDate) {
+        try {
+          await wecom.sendMessage(
+            `【验证到期提醒】设备名称：${item.name || '-'}，设备编号：${item.code || '-'}，验证到期日期：${reminderDate}，剩余 ${diff} 天，请及时安排验证。`
+          );
+          item.verification_reminder_for_date = reminderDate;
+          await item.save();
+        } catch (err) {
+          console.error('企业微信发送失败:', err.message);
+        }
       }
     }
   }

@@ -14,7 +14,7 @@
           <el-tag :type="calibrationTag(instrument.calibration_status)" effect="light">
             {{ calibrationText(instrument.calibration_status) }}
           </el-tag>
-          <el-tag v-if="['repair', 'scrapped'].includes(instrument.status)" :type="deviceStatusTag(instrument.status)" effect="plain">
+          <el-tag v-if="['repair', 'paused', 'scrapped'].includes(instrument.status)" :type="deviceStatusTag(instrument.status)" effect="plain">
             {{ deviceStatusText(instrument.status) }}
           </el-tag>
         </div>
@@ -34,6 +34,9 @@
       </div>
 
       <div class="m-section">
+        <div class="m-row"><span class="m-key">校准方式</span>{{ calibrationModeText(instrument.calibration_mode) }}</div>
+        <div class="m-row"><span class="m-key">验证情况</span>{{ verificationResultText(instrument.verification_result) }}</div>
+        <div class="m-row"><span class="m-key">下次验证日期</span>{{ instrument.next_verification_date || '-' }}</div>
         <div class="m-row"><span class="m-key">计量结果</span>{{ instrument.calibration_result || '-' }}</div>
         <div class="m-row"><span class="m-key">本次计量时间</span>{{ instrument.last_calibration_date || '-' }}</div>
         <div class="m-row"><span class="m-key">下次计量时间</span>{{ instrument.next_calibration_date || '-' }}</div>
@@ -47,19 +50,29 @@
       <el-button size="large" type="primary" class="m-action" :icon="Document" @click="$emit('records', instrument)">
         计量记录
       </el-button>
+      <el-button
+        v-if="instrument.calibration_mode === 'calibration_verification'"
+        size="large"
+        type="warning"
+        class="m-action"
+        :icon="Stamp"
+        @click="$emit('verification', instrument)"
+      >
+        验证记录
+      </el-button>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { ArrowLeft, Document } from '@element-plus/icons-vue'
-import { calibrationText, calibrationTag, deviceStatusText, deviceStatusTag } from '../utils/format'
+import { ArrowLeft, Document, Stamp } from '@element-plus/icons-vue'
+import { calibrationText, calibrationTag, deviceStatusText, deviceStatusTag, calibrationModeText, verificationResultText } from '../utils/format'
 
 const props = defineProps({
   instrument: { type: Object, required: true }
 })
 
-defineEmits(['back', 'records'])
+defineEmits(['back', 'records', 'verification'])
 </script>
 
 <style scoped>

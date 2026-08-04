@@ -27,6 +27,21 @@ const buildWhere = (query = {}) => {
 
 exports.create = (data) => Instrument.create(data);
 
+// 计量/验证联动：校准方式为"计量+验证"时，计量结果与验证情况任一不合格即判定不合格
+exports.resolveCalibrationStatus = (result, mode, verification) => {
+  const resultFailed = result === '不合格';
+  const verificationFailed = mode === 'calibration_verification' && verification === 'failed';
+
+  if (resultFailed || verificationFailed) {
+    return {
+      status: 'failed',
+      lockReason: verificationFailed ? '验证不合格' : '校准不合格'
+    };
+  }
+
+  return { status: 'normal', lockReason: null };
+};
+
 exports.list = async (query = {}) => {
   const page = Math.max(parseInt(query.page, 10) || 1, 1);
   const pageSize = Math.min(Math.max(parseInt(query.pageSize, 10) || 20, 1), 500);
@@ -54,8 +69,7 @@ exports.use = async (id) => {
   if (!inst) throw new Error('设备不存在');
   if (inst.locked) throw new Error(inst.lock_reason || '设备已锁定');
   if (['expired', 'failed'].includes(inst.calibration_status)) throw new Error('计量异常');
-  if (inst.status !== 'idle') throw new Error('设备不可用');
+  if (inst.status !== 'normal') throw new Error('设备不可用');
 
-  inst.status = 'in_use';
   await inst.save();
 };

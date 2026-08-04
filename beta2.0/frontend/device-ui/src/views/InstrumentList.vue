@@ -20,7 +20,7 @@
       <el-form-item label="部门">
         <el-input v-model="query.department" placeholder="所属部门" clearable />
       </el-form-item>
-      <el-form-item label="计量状态">
+      <el-form-item label="计量/验证状态">
         <el-select v-model="query.calibration_status" placeholder="全部" clearable>
           <el-option label="未校准" value="uncalibrated" />
           <el-option label="正常" value="normal" />
@@ -49,16 +49,24 @@
       <el-table-column prop="department" label="所属部门" min-width="110" show-overflow-tooltip />
       <el-table-column prop="owner" label="责任人" min-width="90" show-overflow-tooltip />
       <el-table-column prop="next_calibration_date" label="下次计量时间" width="120" />
-      <el-table-column label="计量状态" width="110" align="center">
+      <el-table-column label="计量/验证状态" width="130" align="center">
         <template #default="scope">
           <el-tag :type="calibrationTag(scope.row.calibration_status)" effect="light">
             {{ calibrationText(scope.row.calibration_status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" :width="isAdmin ? 220 : 110" fixed="right">
+      <el-table-column label="操作" :width="isAdmin ? 310 : 200" fixed="right">
         <template #default="scope">
           <el-button size="small" @click.stop="openCalibrationRecords(scope.row)">计量记录</el-button>
+          <el-button
+            v-if="scope.row.calibration_mode === 'calibration_verification'"
+            size="small"
+            type="warning"
+            @click.stop="openVerificationRecords(scope.row)"
+          >
+            验证记录
+          </el-button>
           <el-button v-if="isAdmin" size="small" type="primary" @click.stop="openEdit(scope.row)">编辑</el-button>
           <el-button v-if="isAdmin" size="small" type="danger" @click.stop="removeDevice(scope.row)">删除</el-button>
         </template>
@@ -89,7 +97,11 @@
         <el-descriptions-item label="所属部门">{{ detail.department }}</el-descriptions-item>
         <el-descriptions-item label="责任人">{{ detail.owner }}</el-descriptions-item>
         <el-descriptions-item label="固定资产编号">{{ detail.asset_code }}</el-descriptions-item>
-        <el-descriptions-item label="计量状态">{{ calibrationText(detail.calibration_status) }}</el-descriptions-item>
+        <el-descriptions-item label="设备状态">{{ deviceStatusText(detail.status) }}</el-descriptions-item>
+        <el-descriptions-item label="计量/验证状态">{{ calibrationText(detail.calibration_status) }}</el-descriptions-item>
+        <el-descriptions-item label="校准方式">{{ calibrationModeText(detail.calibration_mode) }}</el-descriptions-item>
+        <el-descriptions-item label="验证情况">{{ verificationResultText(detail.verification_result) }}</el-descriptions-item>
+        <el-descriptions-item label="下次验证日期">{{ detail.next_verification_date || '-' }}</el-descriptions-item>
         <el-descriptions-item label="计量结果">{{ detail.calibration_result || '-' }}</el-descriptions-item>
         <el-descriptions-item label="本次计量时间">{{ detail.last_calibration_date || '-' }}</el-descriptions-item>
         <el-descriptions-item label="下次计量时间">{{ detail.next_calibration_date || '-' }}</el-descriptions-item>
@@ -120,7 +132,15 @@
         <el-form-item label="仪器使用注意事项">
           <el-input v-model="editForm.usage_notes" type="textarea" :rows="3" />
         </el-form-item>
-        <el-form-item label="计量状态">
+        <el-form-item label="设备状态">
+          <el-select v-model="editForm.status">
+            <el-option label="正常" value="normal" />
+            <el-option label="维修" value="repair" />
+            <el-option label="暂停" value="paused" />
+            <el-option label="报废" value="scrapped" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="计量/验证状态">
           <el-select v-model="editForm.calibration_status">
             <el-option label="未校准" value="uncalibrated" />
             <el-option label="正常" value="normal" />
@@ -128,6 +148,22 @@
             <el-option label="已过期" value="expired" />
             <el-option label="校准不合格" value="failed" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="校准方式">
+          <el-select v-model="editForm.calibration_mode">
+            <el-option label="计量" value="calibration" />
+            <el-option label="计量+验证" value="calibration_verification" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="验证情况">
+          <el-select v-model="editForm.verification_result">
+            <el-option label="未验证" value="unverified" />
+            <el-option label="合格" value="passed" />
+            <el-option label="不合格" value="failed" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="下次验证日期">
+          <el-date-picker v-model="editForm.next_verification_date" type="date" />
         </el-form-item>
         <el-form-item label="计量结果"><el-input v-model="editForm.calibration_result" /></el-form-item>
         <el-form-item label="本次计量时间"><el-date-picker v-model="editForm.last_calibration_date" type="date" /></el-form-item>
@@ -152,6 +188,12 @@
       :instrument="calibrationInstrument"
       @changed="loadData"
     />
+
+    <VerificationRecords
+      v-model:show="verificationRecordsVisible"
+      :instrument="verificationInstrument"
+      @changed="loadData"
+    />
   </div>
 </template>
 
@@ -169,8 +211,10 @@ import {
 } from '../api/instrument'
 import InstrumentForm from '../components/InstrumentForm.vue'
 import CalibrationRecords from '../components/CalibrationRecords.vue'
+import VerificationRecords from '../components/VerificationRecords.vue'
 import { useIsMobile } from '../utils/useIsMobile'
 import { pendingInstrumentFilter } from '../utils/dashboardFilter'
+import { calibrationModeText, verificationResultText, deviceStatusText } from '../utils/format'
 
 const list = ref([])
 const loading = ref(false)
@@ -192,6 +236,8 @@ const editVisible = ref(false)
 const detail = ref(null)
 const calibrationRecordsVisible = ref(false)
 const calibrationInstrument = ref(null)
+const verificationRecordsVisible = ref(false)
+const verificationInstrument = ref(null)
 const calibrationForm = reactive({
   calibration_result: '合格',
   last_calibration_date: '',
@@ -209,9 +255,12 @@ const editForm = reactive({
   department: '',
   owner: '',
   asset_code: '',
-  status: 'idle',
+  status: 'normal',
   usage_notes: '',
   calibration_status: 'uncalibrated',
+  calibration_mode: 'calibration',
+  verification_result: 'unverified',
+  next_verification_date: '',
   calibration_result: '',
   calibration_note: '',
   last_calibration_date: '',
@@ -253,7 +302,8 @@ const toPayload = form => ({
   ...form,
   purchase_date: formatDate(form.purchase_date),
   last_calibration_date: formatDate(form.last_calibration_date),
-  next_calibration_date: formatDate(form.next_calibration_date)
+  next_calibration_date: formatDate(form.next_calibration_date),
+  next_verification_date: formatDate(form.next_verification_date)
 })
 
 const loadData = async () => {
@@ -318,6 +368,11 @@ const openCalibrationRecords = row => {
   calibrationRecordsVisible.value = true
 }
 
+const openVerificationRecords = row => {
+  verificationInstrument.value = row
+  verificationRecordsVisible.value = true
+}
+
 const openEdit = row => {
   Object.assign(editForm, {
     id: row.id,
@@ -330,9 +385,12 @@ const openEdit = row => {
     department: row.department || '',
     owner: row.owner || '',
     asset_code: row.asset_code || '',
-    status: row.status || 'idle',
+    status: row.status || 'normal',
     usage_notes: row.usage_notes || '',
     calibration_status: row.calibration_status || 'uncalibrated',
+    calibration_mode: row.calibration_mode || 'calibration',
+    verification_result: row.verification_result || 'unverified',
+    next_verification_date: row.next_verification_date || '',
     calibration_result: row.calibration_result || '',
     calibration_note: row.calibration_note || '',
     last_calibration_date: row.last_calibration_date || '',

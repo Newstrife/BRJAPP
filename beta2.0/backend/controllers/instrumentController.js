@@ -25,6 +25,9 @@ const buildInstrumentPayload = (body) => ({
   calibration_note: body.calibration_note,
   last_calibration_date: body.last_calibration_date,
   next_calibration_date: body.next_calibration_date,
+  calibration_mode: body.calibration_mode,
+  verification_result: body.verification_result,
+  next_verification_date: body.next_verification_date,
   locked: body.locked,
   lock_reason: body.lock_reason
 });
@@ -130,17 +133,23 @@ exports.updateCalibration = async (req, res) => {
     if (!device) return fail(res, '设备不存在');
 
     const result = req.body.calibration_result || '';
-    const calibrationStatus = result === '不合格' ? 'failed' : 'normal';
+    const mode = req.body.calibration_mode || device.calibration_mode || 'calibration';
+    const verification = req.body.verification_result || device.verification_result || 'unverified';
+    const { status: calibrationStatus, lockReason } = service.resolveCalibrationStatus(result, mode, verification);
 
     await device.update({
+      calibration_mode: mode,
+      verification_result: verification,
       calibration_result: result,
       calibration_note: req.body.calibration_note,
       last_calibration_date: req.body.last_calibration_date,
       next_calibration_date: req.body.next_calibration_date,
+      next_verification_date: req.body.next_verification_date ?? device.next_verification_date,
       calibration_status: calibrationStatus,
       calibration_reminder_for_date: null,
+      verification_reminder_for_date: null,
       locked: calibrationStatus === 'failed',
-      lock_reason: calibrationStatus === 'failed' ? '校准不合格' : null
+      lock_reason: lockReason
     });
 
     await audit.record(req, {
@@ -150,9 +159,12 @@ exports.updateCalibration = async (req, res) => {
       targetLabel: `${device.code || ''} ${device.name || ''}`.trim(),
       detail: {
         result,
+        calibration_mode: mode,
+        verification_result: verification,
         note: req.body.calibration_note,
         last_calibration_date: req.body.last_calibration_date,
         next_calibration_date: req.body.next_calibration_date,
+        next_verification_date: req.body.next_verification_date ?? device.next_verification_date,
         calibration_status: calibrationStatus
       }
     });
@@ -173,10 +185,10 @@ exports.useDevice = async (req, res) => {
     if (device.calibration_status === 'uncalibrated') return fail(res, '设备未校准，限制使用');
     if (device.calibration_status === 'failed') return fail(res, '设备校准不合格，限制使用');
     if (device.locked) return fail(res, device.lock_reason || '设备已锁定');
-    if (device.status !== 'idle') return fail(res, `设备已被 ${device.borrower || '其他用户'} 领用`);
+    if (device.status !== 'normal') return fail(res, '设备处于维修/暂停/报废状态，不可领用');
+    if (device.borrower) return fail(res, `设备已被 ${device.borrower} 领用`);
 
     await device.update({
-      status: 'in_use',
       borrower
     });
 
@@ -200,7 +212,7 @@ exports.returnDevice = async (req, res) => {
     const user = currentUser(req);
 
     if (!device) return fail(res, '设备不存在');
-    if (device.status !== 'in_use') return fail(res, '设备当前未被领用');
+    if (!device.borrower) return fail(res, '设备当前未被领用');
 
     const borrower = device.borrower || '';
     const isOwner = borrower && [user.nickname, user.username].filter(Boolean).includes(borrower);
@@ -210,7 +222,6 @@ exports.returnDevice = async (req, res) => {
     }
 
     await device.update({
-      status: 'idle',
       borrower: null
     });
 

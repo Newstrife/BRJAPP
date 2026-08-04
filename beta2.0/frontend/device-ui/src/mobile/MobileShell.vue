@@ -70,11 +70,19 @@
       @back="goBack"
       @changed="loadInstruments"
       @records="openRecords"
+      @verification="openVerification"
     />
 
     <MobileCalibrationRecords
       v-if="recordsInstrument"
       :instrument="recordsInstrument"
+      @close="goBack"
+      @changed="loadInstruments"
+    />
+
+    <MobileVerificationRecords
+      v-if="verificationInstrument"
+      :instrument="verificationInstrument"
       @close="goBack"
       @changed="loadInstruments"
     />
@@ -91,6 +99,7 @@ import MobileDashboard from './MobileDashboard.vue'
 import MobileInstrumentList from './MobileInstrumentList.vue'
 import MobileInstrumentDetail from './MobileInstrumentDetail.vue'
 import MobileCalibrationRecords from './MobileCalibrationRecords.vue'
+import MobileVerificationRecords from './MobileVerificationRecords.vue'
 import MobileAuditLogs from './MobileAuditLogs.vue'
 import MobileProfile from './MobileProfile.vue'
 
@@ -108,6 +117,7 @@ const page = ref(1)
 const listQuery = ref({})
 const selectedId = ref(null)
 const recordsInstrument = ref(null)
+const verificationInstrument = ref(null)
 
 const canAudit = computed(() => ['admin', 'auditor'].includes(props.user.role))
 
@@ -140,6 +150,13 @@ const openRecords = instrument => {
   recordsInstrument.value = instrument
   pushLayer(() => {
     recordsInstrument.value = null
+  })
+}
+
+const openVerification = instrument => {
+  verificationInstrument.value = instrument
+  pushLayer(() => {
+    verificationInstrument.value = null
   })
 }
 

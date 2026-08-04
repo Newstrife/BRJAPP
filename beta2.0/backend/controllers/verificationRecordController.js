@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const CalibrationRecord = require('../models/calibrationRecord');
+const VerificationRecord = require('../models/verificationRecord');
 const Instrument = require('../models/instrument');
 const { success, fail } = require('../utils/response');
 const audit = require('../services/auditService');
@@ -12,11 +12,36 @@ const currentUser = (req) => ({
 
 const requireAdmin = (req, res) => {
   if (req.user?.role === 'admin') return true;
-  fail(res, '仅管理员可以操作计量记录');
+  fail(res, '仅管理员可以操作验证记录');
   return false;
 };
 
 const like = value => ({ [Op.like]: `%${value}%` });
+
+// 验证结果映射为枚举并联动设备状态
+const applyToInstrument = async (instrument, record) => {
+  const verification = record.result === '不合格'
+    ? 'failed'
+    : record.result === '合格'
+      ? 'passed'
+      : instrument.verification_result;
+
+  const { status, lockReason } = instrumentService.resolveCalibrationStatus(
+    instrument.calibration_result,
+    instrument.calibration_mode || 'calibration',
+    verification
+  );
+
+  await instrument.update({
+    verification_result: verification,
+    next_verification_date: record.next_verification_date,
+    verification_reminder_for_date: null,
+    calibration_status: status,
+    calibration_reminder_for_date: null,
+    locked: status === 'failed',
+    lock_reason: lockReason
+  });
+};
 
 exports.list = async (req, res) => {
   try {
@@ -27,9 +52,9 @@ exports.list = async (req, res) => {
     if (req.query.instrument_name) where.instrument_name = like(req.query.instrument_name);
     if (req.query.result) where.result = req.query.result;
 
-    const data = await CalibrationRecord.findAll({
+    const data = await VerificationRecord.findAll({
       where,
-      order: [['calibration_date', 'DESC'], ['id', 'DESC']]
+      order: [['verification_date', 'DESC'], ['id', 'DESC']]
     });
 
     success(res, data);
@@ -41,46 +66,29 @@ exports.list = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    if (!req.body.calibration_info) return fail(res, '请填写计量信息');
+    if (!req.body.verification_info) return fail(res, '请填写验证信息');
 
     const instrument = await Instrument.findByPk(req.body.instrument_id);
     if (!instrument) return fail(res, '设备不存在');
 
     const user = currentUser(req);
-    const record = await CalibrationRecord.create({
+    const record = await VerificationRecord.create({
       instrument_id: instrument.id,
       instrument_code: instrument.code,
       instrument_name: instrument.name,
       result: req.body.result,
-      calibration_info: req.body.calibration_info,
-      calibration_date: req.body.calibration_date,
-      next_calibration_date: req.body.next_calibration_date,
+      verification_info: req.body.verification_info,
+      verification_date: req.body.verification_date,
+      next_verification_date: req.body.next_verification_date,
       certificate_file: req.file ? req.file.path : '',
       certificate_name: req.file ? req.file.originalname : '',
       created_by: user.nickname || user.username
     });
 
-    const createMode = instrument.calibration_mode || 'calibration';
-    const createVerification = instrument.verification_result || 'unverified';
-    const { status: calibrationStatus, lockReason } = instrumentService.resolveCalibrationStatus(
-      req.body.result,
-      createMode,
-      createVerification
-    );
-
-    await instrument.update({
-      calibration_result: req.body.result,
-      last_calibration_date: req.body.calibration_date,
-      next_calibration_date: req.body.next_calibration_date,
-      calibration_status: calibrationStatus,
-      calibration_reminder_for_date: null,
-      verification_reminder_for_date: null,
-      locked: calibrationStatus === 'failed',
-      lock_reason: lockReason
-    });
+    await applyToInstrument(instrument, record);
 
     await audit.record(req, {
-      module: 'calibration',
+      module: 'verification',
       action: 'create',
       targetId: record.id,
       targetLabel: `${record.instrument_code || ''} ${record.instrument_name || ''}`.trim(),
@@ -96,24 +104,24 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    if (!req.body.calibration_info) return fail(res, '请填写计量信息');
+    if (!req.body.verification_info) return fail(res, '请填写验证信息');
 
-    const record = await CalibrationRecord.findByPk(req.params.id);
-    if (!record) return fail(res, '计量记录不存在');
-
-    const before = record.toJSON();
+    const record = await VerificationRecord.findByPk(req.params.id);
+    if (!record) return fail(res, '验证记录不存在');
 
     const instrument = await Instrument.findByPk(req.body.instrument_id || record.instrument_id);
     if (!instrument) return fail(res, '设备不存在');
+
+    const before = record.toJSON();
 
     const nextData = {
       instrument_id: instrument.id,
       instrument_code: instrument.code,
       instrument_name: instrument.name,
       result: req.body.result,
-      calibration_info: req.body.calibration_info,
-      calibration_date: req.body.calibration_date,
-      next_calibration_date: req.body.next_calibration_date
+      verification_info: req.body.verification_info,
+      verification_date: req.body.verification_date,
+      next_verification_date: req.body.next_verification_date
     };
 
     if (req.file) {
@@ -122,26 +130,10 @@ exports.update = async (req, res) => {
     }
 
     await record.update(nextData);
-
-    const { status: updateStatus, lockReason: updateLockReason } = instrumentService.resolveCalibrationStatus(
-      record.result,
-      instrument.calibration_mode || 'calibration',
-      instrument.verification_result || 'unverified'
-    );
-
-    await instrument.update({
-      calibration_result: record.result,
-      last_calibration_date: record.calibration_date,
-      next_calibration_date: record.next_calibration_date,
-      calibration_status: updateStatus,
-      calibration_reminder_for_date: null,
-      verification_reminder_for_date: null,
-      locked: updateStatus === 'failed',
-      lock_reason: updateLockReason
-    });
+    await applyToInstrument(instrument, record);
 
     await audit.record(req, {
-      module: 'calibration',
+      module: 'verification',
       action: 'update',
       targetId: record.id,
       targetLabel: `${record.instrument_code || ''} ${record.instrument_name || ''}`.trim(),
@@ -158,15 +150,15 @@ exports.remove = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
-    const record = await CalibrationRecord.findByPk(req.params.id);
-    if (!record) return fail(res, '计量记录不存在');
+    const record = await VerificationRecord.findByPk(req.params.id);
+    if (!record) return fail(res, '验证记录不存在');
 
     const snapshot = record.toJSON();
 
     await record.destroy();
 
     await audit.record(req, {
-      module: 'calibration',
+      module: 'verification',
       action: 'remove',
       targetId: snapshot.id,
       targetLabel: `${snapshot.instrument_code || ''} ${snapshot.instrument_name || ''}`.trim(),

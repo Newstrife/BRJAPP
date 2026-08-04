@@ -108,6 +108,7 @@ import { getAuditLogs, getAuditLogDetail } from '../api/auditLog'
 const moduleLabels = {
   instrument: '设备',
   calibration: '计量记录',
+  verification: '验证记录',
   user: '账号',
   wecom: '企业微信'
 }

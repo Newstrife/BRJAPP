@@ -27,13 +27,27 @@ const Instrument = sequelize.define('instrument', {
 
   status: {
     type: DataTypes.ENUM(
-      'idle',
-      'in_use',
+      'normal',
       'repair',
+      'paused',
       'scrapped'
     ),
-    defaultValue: 'idle'
+    defaultValue: 'normal'
   },
+
+  calibration_mode: {
+    type: DataTypes.ENUM('calibration', 'calibration_verification'),
+    defaultValue: 'calibration'
+  },
+
+  verification_result: {
+    type: DataTypes.ENUM('unverified', 'passed', 'failed'),
+    defaultValue: 'unverified'
+  },
+
+  next_verification_date: DataTypes.DATEONLY,
+
+  verification_reminder_for_date: DataTypes.STRING,
 
   asset_code: DataTypes.STRING,
 

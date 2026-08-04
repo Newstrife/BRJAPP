@@ -37,15 +37,15 @@
       <el-form-item label="仪器使用注意事项" prop="usage_notes">
         <el-input v-model="form.usage_notes" type="textarea" :rows="3" placeholder="填写使用注意事项" />
       </el-form-item>
-      <el-form-item label="使用状态" prop="status">
+      <el-form-item label="设备状态" prop="status">
         <el-select v-model="form.status" placeholder="选择状态">
-          <el-option label="空闲" value="idle" />
-          <el-option label="使用中" value="in_use" />
-          <el-option label="维修中" value="repair" />
+          <el-option label="正常" value="normal" />
+          <el-option label="维修" value="repair" />
+          <el-option label="暂停" value="paused" />
           <el-option label="报废" value="scrapped" />
         </el-select>
       </el-form-item>
-      <el-form-item label="计量状态" prop="calibration_status">
+      <el-form-item label="计量/验证状态" prop="calibration_status">
         <el-select v-model="form.calibration_status" placeholder="选择状态">
           <el-option label="未校准" value="uncalibrated" />
           <el-option label="正常" value="normal" />
@@ -53,6 +53,22 @@
           <el-option label="已过期" value="expired" />
           <el-option label="校准不合格" value="failed" />
         </el-select>
+      </el-form-item>
+      <el-form-item label="校准方式" prop="calibration_mode">
+        <el-select v-model="form.calibration_mode" placeholder="选择校准方式">
+          <el-option label="计量" value="calibration" />
+          <el-option label="计量+验证" value="calibration_verification" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="验证情况" prop="verification_result">
+        <el-select v-model="form.verification_result" placeholder="选择验证情况">
+          <el-option label="未验证" value="unverified" />
+          <el-option label="合格" value="passed" />
+          <el-option label="不合格" value="failed" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="下次验证日期" prop="next_verification_date">
+        <el-date-picker v-model="form.next_verification_date" type="date" placeholder="选择日期" />
       </el-form-item>
       <el-form-item label="计量结果" prop="calibration_result">
         <el-input v-model="form.calibration_result" placeholder="例如：合格 / 不合格" />
@@ -99,10 +115,13 @@ const form = reactive({
   location: '',
   department: '',
   owner: '',
-  status: 'idle',
+  status: 'normal',
   usage_notes: '',
   asset_code: '',
   calibration_status: 'uncalibrated',
+  calibration_mode: 'calibration',
+  verification_result: 'unverified',
+  next_verification_date: '',
   calibration_result: '',
   calibration_note: '',
   last_calibration_date: '',
@@ -137,7 +156,8 @@ const submitForm = () => {
       ...form,
       purchase_date: formatDate(form.purchase_date),
       last_calibration_date: formatDate(form.last_calibration_date),
-      next_calibration_date: formatDate(form.next_calibration_date)
+      next_calibration_date: formatDate(form.next_calibration_date),
+      next_verification_date: formatDate(form.next_verification_date)
     })
     ElMessage.success('新增成功')
     emit('success')

@@ -22,6 +22,7 @@ app.use('/api/wecom', require('./routes/wecomRoutes'));
 app.use('/wecom', require('./routes/wecomRoutes'));
 app.use('/api/instruments', require('./routes/instrumentRoutes'));
 app.use('/api/calibration-records', require('./routes/calibrationRecordRoutes'));
+app.use('/api/verification-records', require('./routes/verificationRecordRoutes'));
 app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
 
 const distDir = path.join(__dirname, '..', 'frontend', 'device-ui', 'dist');
@@ -38,9 +39,19 @@ if (fs.existsSync(distDir)) {
   });
 }
 
-sequelize.sync({ alter: true }).then(async () => {
+// 设备状态迁移：先把 status ENUM 扩为超集（避免截断报错），旧值统一为 normal，再由 sync 收敛到新枚举
+sequelize.query(
+  "ALTER TABLE instrument MODIFY status ENUM('idle', 'in_use', 'normal', 'repair', 'paused', 'scrapped') NOT NULL DEFAULT 'idle'"
+).catch(() => {}).then(() => sequelize.query(
+  "UPDATE instrument SET status = 'normal' WHERE status IN ('idle', 'in_use', '') OR status IS NULL"
+).catch(() => {})).then(() => sequelize.sync({ alter: true })).then(async () => {
   // 历史空编号归一化为 NULL，并尽力补充唯一索引（存在重复时仅应用层校验兜底）
   await sequelize.query("UPDATE instrument SET code = NULL WHERE code = ''").catch(() => {});
+
+  // 设备状态旧值迁移：idle / in_use / 空值 → normal
+  await sequelize.query(
+    "UPDATE instrument SET status = 'normal' WHERE status NOT IN ('normal', 'repair', 'paused', 'scrapped') OR status IS NULL"
+  ).catch(() => {});
 
   try {
     await sequelize.query('ALTER TABLE instrument ADD UNIQUE INDEX uniq_instrument_code (code)');

@@ -15,18 +15,35 @@ export const calibrationTag = status => ({
 }[status] || 'info')
 
 export const deviceStatusText = status => ({
-  idle: '空闲',
-  in_use: '使用中',
+  normal: '正常',
   repair: '维修中',
+  paused: '暂停',
   scrapped: '报废'
 }[status] || status)
 
 export const deviceStatusTag = status => ({
-  idle: 'success',
-  in_use: 'primary',
+  normal: 'success',
   repair: 'warning',
-  scrapped: 'info'
+  paused: 'info',
+  scrapped: 'danger'
 }[status] || 'info')
+
+export const calibrationModeText = mode => ({
+  calibration: '计量',
+  calibration_verification: '计量+验证'
+}[mode] || '计量')
+
+export const verificationResultText = result => ({
+  unverified: '未验证',
+  passed: '合格',
+  failed: '不合格'
+}[result] || result)
+
+export const verificationResultTag = result => ({
+  unverified: 'info',
+  passed: 'success',
+  failed: 'danger'
+}[result] || 'info')
 
 export const roleLabel = role => ({
   admin: '管理员',
@@ -37,6 +54,7 @@ export const roleLabel = role => ({
 export const auditModuleLabels = {
   instrument: '设备',
   calibration: '计量记录',
+  verification: '验证记录',
   user: '账号',
   wecom: '企业微信'
 }

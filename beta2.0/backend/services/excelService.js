@@ -10,14 +10,17 @@ const fieldMap = {
   department: ['department', '所属部门', '部门'],
   owner: ['owner', '责任人'],
   borrower: ['borrower', '当前领用人', '领用人'],
-  status: ['status', '使用状态', '状态'],
+  status: ['status', '使用状态', '设备状态', '状态'],
   usage_notes: ['usage_notes', '仪器使用注意事项', '使用注意事项', '注意事项'],
   asset_code: ['asset_code', '固定资产编号', '资产编号'],
-  calibration_status: ['calibration_status', '计量状态', '验证状态'],
+  calibration_status: ['calibration_status', '计量状态', '计量/验证状态', '验证状态'],
   calibration_result: ['calibration_result', '计量结果', '校准结果'],
   calibration_note: ['calibration_note', '计量说明', '校准说明'],
   last_calibration_date: ['last_calibration_date', '本次计量时间', '本次校准日期'],
-  next_calibration_date: ['next_calibration_date', '下次计量时间', '下次校准日期', '下次验证日期']
+  next_calibration_date: ['next_calibration_date', '下次计量时间', '下次校准日期'],
+  calibration_mode: ['calibration_mode', '校准方式', '仪器设备校准方式'],
+  verification_result: ['verification_result', '验证情况'],
+  next_verification_date: ['next_verification_date', '下次验证日期', '验证到期日期']
 };
 
 const pickValue = (row, keys) => {
@@ -42,14 +45,36 @@ const normalizeDate = value => {
 
 const normalizeStatus = value => {
   const map = {
-    空闲: 'idle',
-    已领用: 'in_use',
-    使用中: 'in_use',
+    正常: 'normal',
+    空闲: 'normal',
+    已领用: 'normal',
+    使用中: 'normal',
     维修中: 'repair',
+    维修: 'repair',
+    暂停: 'paused',
     报废: 'scrapped'
   };
 
-  return map[value] || value || 'idle';
+  return map[value] || value || 'normal';
+};
+
+const normalizeCalibrationMode = value => {
+  const map = {
+    计量: 'calibration',
+    '计量+验证': 'calibration_verification'
+  };
+
+  return map[value] || value || 'calibration';
+};
+
+const normalizeVerificationResult = value => {
+  const map = {
+    未验证: 'unverified',
+    合格: 'passed',
+    不合格: 'failed'
+  };
+
+  return map[value] || value || 'unverified';
 };
 
 const normalizeCalibrationStatus = value => {
@@ -84,7 +109,10 @@ exports.parseExcel = filePath => {
       item.purchase_date = normalizeDate(item.purchase_date);
       item.last_calibration_date = normalizeDate(item.last_calibration_date);
       item.next_calibration_date = normalizeDate(item.next_calibration_date);
+      item.next_verification_date = normalizeDate(item.next_verification_date);
       item.status = normalizeStatus(item.status);
+      item.calibration_mode = normalizeCalibrationMode(item.calibration_mode);
+      item.verification_result = normalizeVerificationResult(item.verification_result);
       item.calibration_status = normalizeCalibrationStatus(item.calibration_status || item.calibration_result);
 
       return item;
