@@ -39,7 +39,7 @@
 
     <main class="app-main">
       <el-tabs v-model="activeTab" class="app-tabs">
-        <el-tab-pane label="看板" name="dashboard">
+        <el-tab-pane label="设备门户" name="dashboard">
           <Dashboard :active="activeTab === 'dashboard'" @go-instruments="activeTab = 'instruments'" />
         </el-tab-pane>
         <el-tab-pane label="设备列表" name="instruments">

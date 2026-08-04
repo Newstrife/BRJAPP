@@ -145,7 +145,7 @@ const resetFilters = () => {
   emitQuery()
 }
 
-// 看板卡片跳转：清空其他条件，按计量状态筛选
+// 设备门户卡片跳转：清空其他条件，按计量状态筛选
 const applyExternalFilter = () => {
   keyword.value = ''
   filters.location = ''

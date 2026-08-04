@@ -84,8 +84,8 @@ const cards = computed(() => [
   { key: 'calibrated_unverified', label: '已计量未验证', value: byStatus.value.calibrated_unverified || 0, color: '#c55a11', calibrationStatus: 'calibrated_unverified' },
   { key: 'due_soon', label: '即将到期', value: byStatus.value.due_soon || 0, color: '#d9852b', calibrationStatus: 'due_soon' },
   { key: 'expired', label: '已过期', value: byStatus.value.expired || 0, color: '#d0453e', calibrationStatus: 'expired' },
-  { key: 'failed', label: '校准不合格', value: byStatus.value.failed || 0, color: '#8e44ad', calibrationStatus: 'failed' },
-  { key: 'uncalibrated', label: '未校准', value: byStatus.value.uncalibrated || 0, color: '#6b7280', calibrationStatus: 'uncalibrated' }
+  { key: 'failed', label: '验证不合格', value: byStatus.value.failed || 0, color: '#8e44ad', calibrationStatus: 'failed' },
+  { key: 'uncalibrated', label: '未验证', value: byStatus.value.uncalibrated || 0, color: '#6b7280', calibrationStatus: 'uncalibrated' }
 ])
 
 const deviceCards = computed(() => [

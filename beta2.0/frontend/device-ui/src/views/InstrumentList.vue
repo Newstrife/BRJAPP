@@ -2,9 +2,23 @@
   <div class="page-panel instrument-list">
     <div class="panel-title">
       <h2>设备列表</h2>
+      <div v-if="isAdmin" class="panel-actions">
+        <el-button type="primary" :icon="Plus" @click="showAdd = true">新增设备</el-button>
+        <el-upload
+          class="upload-btn"
+          :show-file-list="false"
+          :http-request="uploadExcel"
+          accept=".xlsx,.xls"
+        >
+          <el-button :icon="Upload">导入 Excel</el-button>
+        </el-upload>
+        <el-button :icon="Document" @click="downloadTemplate">下载模板</el-button>
+        <el-button :icon="Download" @click="exportExcelFile">导出</el-button>
+      </div>
     </div>
 
-    <el-form class="toolbar" :model="query" inline>
+    <div class="filter-card">
+      <el-form class="toolbar" :model="query" inline>
       <el-form-item label="设备编号">
         <el-input v-model="query.code" placeholder="设备编号" clearable />
       </el-form-item>
@@ -38,26 +52,21 @@
           <el-option label="不合格" value="failed" />
         </el-select>
       </el-form-item>
-      <el-form-item>
+      <el-form-item class="filter-actions">
         <el-button type="primary" :icon="Search" @click="search">搜索</el-button>
         <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
-        <el-button v-if="isAdmin" type="primary" plain :icon="Plus" @click="showAdd = true">新增</el-button>
-        <el-upload v-if="isAdmin" :show-file-list="false" :http-request="uploadExcel" accept=".xlsx,.xls">
-          <el-button :icon="Upload">导入 Excel</el-button>
-        </el-upload>
-        <el-button v-if="isAdmin" :icon="Document" @click="downloadTemplate">下载模板</el-button>
-        <el-button v-if="isAdmin" :icon="Download" @click="exportExcelFile">导出</el-button>
       </el-form-item>
-    </el-form>
+      </el-form>
+    </div>
 
-    <el-table v-loading="loading" :data="list" border @row-dblclick="openDetail">
-      <el-table-column prop="code" label="设备编号" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="name" label="设备名称" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="model" label="型号规格" min-width="130" show-overflow-tooltip />
-      <el-table-column prop="location" label="存放位置" min-width="110" show-overflow-tooltip />
-      <el-table-column prop="department" label="所属部门" min-width="110" show-overflow-tooltip />
-      <el-table-column prop="owner" label="责任人" min-width="90" show-overflow-tooltip />
-      <el-table-column prop="next_calibration_date" label="下次计量时间" width="120" />
+    <el-table v-loading="loading" :data="list" border stripe @row-dblclick="openDetail">
+      <el-table-column prop="code" label="设备编号" min-width="110" show-overflow-tooltip />
+      <el-table-column prop="name" label="设备名称" min-width="130" show-overflow-tooltip />
+      <el-table-column prop="model" label="型号规格" min-width="120" show-overflow-tooltip />
+      <el-table-column prop="location" label="存放位置" min-width="100" show-overflow-tooltip />
+      <el-table-column prop="department" label="所属部门" min-width="100" show-overflow-tooltip />
+      <el-table-column prop="owner" label="责任人" min-width="80" show-overflow-tooltip />
+      <el-table-column prop="next_calibration_date" label="下次计量时间" width="115" />
       <el-table-column label="设备状态" width="90" align="center">
         <template #default="scope">
           <el-tag :type="deviceStatusTag(scope.row.status)" effect="plain">
@@ -65,14 +74,14 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="计量/验证状态" width="130" align="center">
+      <el-table-column label="计量/验证状态" width="120" align="center">
         <template #default="scope">
           <el-tag :type="calibrationTag(scope.row.calibration_status)" effect="light">
             {{ calibrationText(scope.row.calibration_status, scope.row.calibration_mode, scope.row.lock_reason) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" :width="isAdmin ? 310 : 200" fixed="right">
+      <el-table-column label="操作" :width="isAdmin ? 310 : 200">
         <template #default="scope">
           <el-button size="small" @click.stop="openCalibrationRecords(scope.row)">计量记录</el-button>
           <el-button
@@ -231,7 +240,7 @@ import CalibrationRecords from '../components/CalibrationRecords.vue'
 import VerificationRecords from '../components/VerificationRecords.vue'
 import { useIsMobile } from '../utils/useIsMobile'
 import { pendingInstrumentFilter } from '../utils/dashboardFilter'
-import { calibrationModeText, verificationResultText, deviceStatusText, deviceStatusTag } from '../utils/format'
+import { calibrationModeText, verificationResultText, deviceStatusText, deviceStatusTag, calibrationText, calibrationTag } from '../utils/format'
 
 const list = ref([])
 const loading = ref(false)
@@ -340,8 +349,8 @@ const resetQuery = async () => {
   await loadData()
 }
 
-// 看板卡片跳转：清空其他条件，按计量状态筛选
-watch(() => pendingInstrumentFilter.ts, () => {
+// 设备门户卡片跳转：清空其他条件，应用门户选择的筛选
+const applyExternalFilter = () => {
   query.code = ''
   query.name = ''
   query.usage_notes = ''
@@ -351,7 +360,9 @@ watch(() => pendingInstrumentFilter.ts, () => {
   query.calibration_status = pendingInstrumentFilter.calibration_status
   page.value = 1
   loadData()
-})
+}
+
+watch(() => pendingInstrumentFilter.ts, applyExternalFilter)
 
 const handleFormSuccess = async () => {
   showAdd.value = false
@@ -484,32 +495,61 @@ const downloadTemplate = () => {
   link.click()
 }
 
-onMounted(loadData)
+onMounted(() => {
+  if (pendingInstrumentFilter.ts) {
+    applyExternalFilter()
+  } else {
+    loadData()
+  }
+})
 </script>
 
 <style scoped>
-.toolbar {
-  margin-bottom: 4px;
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.toolbar :deep(.el-form-item) {
-  margin-bottom: 12px;
+.panel-actions .upload-btn {
+  display: inline-flex;
 }
 
-.toolbar :deep(.el-input),
-.toolbar :deep(.el-select) {
-  width: 180px;
+.filter-card {
+  margin-bottom: 14px;
+  padding: 14px 14px 0;
+  background: #f8fafc;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+.filter-card :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.filter-card :deep(.el-input),
+.filter-card :deep(.el-select) {
+  width: 170px;
+}
+
+.filter-actions :deep(.el-form-item__content) {
+  margin-left: 4px;
 }
 
 .pager {
   display: flex;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 @media (max-width: 768px) {
-  .toolbar :deep(.el-input),
-  .toolbar :deep(.el-select) {
+  .panel-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .filter-card :deep(.el-input),
+  .filter-card :deep(.el-select) {
     width: 100%;
   }
 }

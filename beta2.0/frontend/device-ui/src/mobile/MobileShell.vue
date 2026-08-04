@@ -32,7 +32,7 @@
         @click="tab = 'dashboard'"
       >
         <el-icon><Odometer /></el-icon>
-        <span>看板</span>
+        <span>设备门户</span>
       </button>
       <button
         class="m-tab"
@@ -122,7 +122,7 @@ const verificationInstrument = ref(null)
 const canAudit = computed(() => ['admin', 'auditor'].includes(props.user.role))
 
 const title = computed(() => ({
-  dashboard: '看板',
+  dashboard: '设备门户',
   instruments: '设备列表',
   audit: '审计日志',
   mine: '我的'
