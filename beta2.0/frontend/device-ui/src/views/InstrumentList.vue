@@ -142,19 +142,21 @@
     <el-dialog v-model="editVisible" title="编辑设备资料" width="820px">
       <el-form
         :model="editForm"
+        :rules="editRules"
+        ref="editFormRef"
         :label-width="isMobile ? 'auto' : '150px'"
         :label-position="isMobile ? 'top' : 'left'"
       >
-        <el-form-item label="设备编号"><el-input v-model="editForm.code" /></el-form-item>
-        <el-form-item label="设备名称"><el-input v-model="editForm.name" /></el-form-item>
-        <el-form-item label="型号规格"><el-input v-model="editForm.model" /></el-form-item>
-        <el-form-item label="厂家"><el-input v-model="editForm.manufacturer" /></el-form-item>
-        <el-form-item label="入库日期"><el-date-picker v-model="editForm.purchase_date" type="date" /></el-form-item>
-        <el-form-item label="存放位置（房间号）"><el-input v-model="editForm.location" /></el-form-item>
-        <el-form-item label="所属部门"><el-input v-model="editForm.department" /></el-form-item>
-        <el-form-item label="责任人"><el-input v-model="editForm.owner" /></el-form-item>
-        <el-form-item label="固定资产编号"><el-input v-model="editForm.asset_code" /></el-form-item>
-        <el-form-item label="仪器使用注意事项">
+        <el-form-item label="设备编号" prop="code"><el-input v-model="editForm.code" /></el-form-item>
+        <el-form-item label="设备名称" prop="name"><el-input v-model="editForm.name" /></el-form-item>
+        <el-form-item label="型号规格" prop="model"><el-input v-model="editForm.model" /></el-form-item>
+        <el-form-item label="厂家" prop="manufacturer"><el-input v-model="editForm.manufacturer" /></el-form-item>
+        <el-form-item label="入库日期" prop="purchase_date"><el-date-picker v-model="editForm.purchase_date" type="date" /></el-form-item>
+        <el-form-item label="存放位置（房间号）" prop="location"><el-input v-model="editForm.location" /></el-form-item>
+        <el-form-item label="所属部门" prop="department"><el-input v-model="editForm.department" /></el-form-item>
+        <el-form-item label="责任人" prop="owner"><el-input v-model="editForm.owner" /></el-form-item>
+        <el-form-item label="固定资产编号" prop="asset_code"><el-input v-model="editForm.asset_code" /></el-form-item>
+        <el-form-item label="仪器使用注意事项" prop="usage_notes">
           <el-input v-model="editForm.usage_notes" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="设备状态">
@@ -188,13 +190,13 @@
             <el-option label="不合格" value="failed" />
           </el-select>
         </el-form-item>
-        <el-form-item label="下次验证日期">
+        <el-form-item label="下次验证日期" prop="next_verification_date">
           <el-date-picker v-model="editForm.next_verification_date" type="date" />
         </el-form-item>
-        <el-form-item label="计量结果"><el-input v-model="editForm.calibration_result" /></el-form-item>
-        <el-form-item label="本次计量时间"><el-date-picker v-model="editForm.last_calibration_date" type="date" /></el-form-item>
-        <el-form-item label="下次计量时间"><el-date-picker v-model="editForm.next_calibration_date" type="date" /></el-form-item>
-        <el-form-item label="计量说明">
+        <el-form-item label="计量结果" prop="calibration_result"><el-input v-model="editForm.calibration_result" /></el-form-item>
+        <el-form-item label="本次计量时间" prop="last_calibration_date"><el-date-picker v-model="editForm.last_calibration_date" type="date" /></el-form-item>
+        <el-form-item label="下次计量时间" prop="next_calibration_date"><el-date-picker v-model="editForm.next_calibration_date" type="date" /></el-form-item>
+        <el-form-item label="计量说明" prop="calibration_note">
           <el-input v-model="editForm.calibration_note" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="锁定设备">
@@ -239,6 +241,7 @@ import InstrumentForm from '../components/InstrumentForm.vue'
 import CalibrationRecords from '../components/CalibrationRecords.vue'
 import VerificationRecords from '../components/VerificationRecords.vue'
 import { useIsMobile } from '../utils/useIsMobile'
+import { loadFieldConfig, buildRules } from '../utils/fieldConfig'
 import { pendingInstrumentFilter } from '../utils/dashboardFilter'
 import { calibrationModeText, verificationResultText, deviceStatusText, deviceStatusTag, calibrationText, calibrationTag } from '../utils/format'
 
@@ -260,6 +263,8 @@ const query = reactive({
 const showAdd = ref(false)
 const detailVisible = ref(false)
 const editVisible = ref(false)
+const editFormRef = ref(null)
+const editRules = computed(() => buildRules())
 const detail = ref(null)
 const calibrationRecordsVisible = ref(false)
 const calibrationInstrument = ref(null)
@@ -414,9 +419,13 @@ const openEdit = row => {
     lock_reason: row.lock_reason || ''
   })
   editVisible.value = true
+  loadFieldConfig()
 }
 
 const saveEdit = async () => {
+  const valid = await editFormRef.value.validate().catch(() => false)
+  if (!valid) return
+
   await updateInstrument(editForm.id, toPayload(editForm))
   ElMessage.success('设备资料已保存')
   editVisible.value = false

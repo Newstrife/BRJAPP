@@ -24,6 +24,7 @@ app.use('/api/instruments', require('./routes/instrumentRoutes'));
 app.use('/api/calibration-records', require('./routes/calibrationRecordRoutes'));
 app.use('/api/verification-records', require('./routes/verificationRecordRoutes'));
 app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
+app.use('/api/field-config', require('./routes/fieldConfigRoutes'));
 
 const distDir = path.join(__dirname, '..', 'frontend', 'device-ui', 'dist');
 

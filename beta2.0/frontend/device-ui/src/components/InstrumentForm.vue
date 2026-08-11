@@ -8,31 +8,31 @@
       :label-position="isMobile ? 'top' : 'left'"
     >
       <el-form-item label="设备编号" prop="code">
-        <el-input v-model="form.code" placeholder="必填" />
+        <el-input v-model="form.code" :placeholder="ph('code')" />
       </el-form-item>
       <el-form-item label="设备名称" prop="name">
-        <el-input v-model="form.name" placeholder="必填" />
+        <el-input v-model="form.name" :placeholder="ph('name')" />
       </el-form-item>
       <el-form-item label="型号规格" prop="model">
-        <el-input v-model="form.model" placeholder="必填" />
+        <el-input v-model="form.model" :placeholder="ph('model')" />
       </el-form-item>
       <el-form-item label="厂家" prop="manufacturer">
-        <el-input v-model="form.manufacturer" placeholder="必填" />
+        <el-input v-model="form.manufacturer" :placeholder="ph('manufacturer')" />
       </el-form-item>
       <el-form-item label="入库日期" prop="purchase_date">
         <el-date-picker v-model="form.purchase_date" type="date" placeholder="选择日期" />
       </el-form-item>
       <el-form-item label="存放位置（房间号）" prop="location">
-        <el-input v-model="form.location" placeholder="必填" />
+        <el-input v-model="form.location" :placeholder="ph('location')" />
       </el-form-item>
       <el-form-item label="所属部门" prop="department">
-        <el-input v-model="form.department" placeholder="必填" />
+        <el-input v-model="form.department" :placeholder="ph('department')" />
       </el-form-item>
       <el-form-item label="责任人" prop="owner">
-        <el-input v-model="form.owner" placeholder="必填" />
+        <el-input v-model="form.owner" :placeholder="ph('owner')" />
       </el-form-item>
       <el-form-item label="固定资产编号" prop="asset_code">
-        <el-input v-model="form.asset_code" placeholder="必填" />
+        <el-input v-model="form.asset_code" :placeholder="ph('asset_code')" />
       </el-form-item>
       <el-form-item label="仪器使用注意事项" prop="usage_notes">
         <el-input v-model="form.usage_notes" type="textarea" :rows="3" placeholder="填写使用注意事项" />
@@ -93,10 +93,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createInstrument } from '../api/instrument'
 import { useIsMobile } from '../utils/useIsMobile'
+import { loadFieldConfig, isFieldRequired, buildRules } from '../utils/fieldConfig'
 
 const props = defineProps({ show: Boolean })
 const emit = defineEmits(['update:show', 'success'])
@@ -104,7 +105,10 @@ const visible = ref(props.show)
 const formRef = ref(null)
 const isMobile = useIsMobile()
 
-watch(() => props.show, val => { visible.value = val })
+watch(() => props.show, val => {
+  visible.value = val
+  if (val) loadFieldConfig()
+})
 watch(visible, val => { emit('update:show', val) })
 
 const form = reactive({
@@ -129,18 +133,9 @@ const form = reactive({
   next_calibration_date: ''
 })
 
-const required = message => [{ required: true, message, trigger: 'blur' }]
-const rules = {
-  code: required('请输入设备编号'),
-  name: required('请输入设备名称'),
-  model: required('请输入型号规格'),
-  manufacturer: required('请输入厂家'),
-  purchase_date: required('请选择入库日期'),
-  location: required('请输入存放位置'),
-  department: required('请输入所属部门'),
-  owner: required('请输入责任人'),
-  asset_code: required('请输入固定资产编号')
-}
+const rules = computed(() => buildRules())
+
+const ph = key => (isFieldRequired(key) ? '必填' : '选填')
 
 const handleClose = () => { visible.value = false }
 const formatDate = value => {

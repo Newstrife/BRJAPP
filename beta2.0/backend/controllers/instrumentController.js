@@ -1,4 +1,5 @@
 const service = require('../services/instrumentService');
+const fieldConfig = require('../services/fieldConfigService');
 const excel = require('../services/excelService');
 const audit = require('../services/auditService');
 const { success, fail } = require('../utils/response');
@@ -48,6 +49,9 @@ exports.create = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
+    const validationError = await fieldConfig.validatePayload(req.body);
+    if (validationError) return fail(res, validationError);
+
     if (req.body.code) {
       const duplicate = await Instrument.findOne({ where: { code: req.body.code } });
       if (duplicate) return fail(res, `设备编号 ${req.body.code} 已存在`);
@@ -72,6 +76,9 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
+
+    const validationError = await fieldConfig.validatePayload(req.body);
+    if (validationError) return fail(res, validationError);
 
     const device = await Instrument.findByPk(req.params.id);
 

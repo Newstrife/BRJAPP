@@ -48,6 +48,9 @@
         <el-tab-pane label="企业微信" name="wecom">
           <WecomSettings />
         </el-tab-pane>
+        <el-tab-pane v-if="user.role === 'admin'" label="表单设置" name="fields">
+          <FieldSettings />
+        </el-tab-pane>
         <el-tab-pane v-if="user.username === 'admin'" label="账号管理" name="accounts">
           <AccountManager />
         </el-tab-pane>
@@ -83,6 +86,7 @@ import Dashboard from './views/Dashboard.vue'
 import InstrumentList from './views/InstrumentList.vue'
 import AccountManager from './views/AccountManager.vue'
 import WecomSettings from './views/WecomSettings.vue'
+import FieldSettings from './views/FieldSettings.vue'
 import AuditLogs from './views/AuditLogs.vue'
 import MobileShell from './mobile/MobileShell.vue'
 import { useIsMobile } from './utils/useIsMobile'
