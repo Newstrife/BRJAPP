@@ -16,13 +16,19 @@
         <el-icon><Lock /></el-icon>修改密码
         <el-icon class="m-menu-arrow"><ArrowRight /></el-icon>
       </button>
+      <button class="m-menu-item" type="button" @click="versionVisible = true">
+        <el-icon><InfoFilled /></el-icon>版本信息
+        <el-icon class="m-menu-arrow"><ArrowRight /></el-icon>
+      </button>
       <button class="m-menu-item m-menu-danger" type="button" @click="confirmLogout">
         <el-icon><SwitchButton /></el-icon>退出登录
         <el-icon class="m-menu-arrow"><ArrowRight /></el-icon>
       </button>
     </div>
 
-    <div class="m-version">设备管理系统 · 移动端</div>
+    <div class="m-version">设备管理系统 · 移动端 · {{ APP_VERSION }}</div>
+
+    <VersionDialog v-model="versionVisible" />
 
     <el-dialog v-model="passwordVisible" title="修改密码" width="92vw">
       <el-form label-position="top">
@@ -44,10 +50,12 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Lock, SwitchButton, ArrowRight } from '@element-plus/icons-vue'
+import { Lock, SwitchButton, ArrowRight, InfoFilled } from '@element-plus/icons-vue'
 import { changePassword } from '../api/user'
 import { roleLabel } from '../utils/format'
 import { useBackToClose } from '../utils/useBackToClose'
+import VersionDialog from '../components/VersionDialog.vue'
+import { APP_VERSION } from '../data/changelog'
 
 const props = defineProps({
   user: { type: Object, required: true }
@@ -56,9 +64,11 @@ const props = defineProps({
 const emit = defineEmits(['logout'])
 
 const passwordVisible = ref(false)
+const versionVisible = ref(false)
 const saving = ref(false)
 
 useBackToClose(passwordVisible)
+useBackToClose(versionVisible)
 
 const passwordForm = reactive({
   oldPassword: '',

@@ -29,6 +29,9 @@
             <el-dropdown-item command="password">
               <el-icon><Lock /></el-icon>修改密码
             </el-dropdown-item>
+            <el-dropdown-item command="version">
+              <el-icon><InfoFilled /></el-icon>版本信息
+            </el-dropdown-item>
             <el-dropdown-item command="logout" divided>
               <el-icon><SwitchButton /></el-icon>退出登录
             </el-dropdown-item>
@@ -60,6 +63,8 @@
       </el-tabs>
     </main>
 
+    <VersionDialog v-model="versionVisible" />
+
     <el-dialog v-model="passwordVisible" title="修改密码" width="420px">
       <el-form :model="passwordForm" label-width="90px">
         <el-form-item label="原密码">
@@ -80,7 +85,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, Lock, SwitchButton } from '@element-plus/icons-vue'
+import { ArrowDown, Lock, SwitchButton, InfoFilled } from '@element-plus/icons-vue'
 import LoginView from './views/LoginView.vue'
 import Dashboard from './views/Dashboard.vue'
 import InstrumentList from './views/InstrumentList.vue'
@@ -89,6 +94,7 @@ import WecomSettings from './views/WecomSettings.vue'
 import FieldSettings from './views/FieldSettings.vue'
 import AuditLogs from './views/AuditLogs.vue'
 import MobileShell from './mobile/MobileShell.vue'
+import VersionDialog from './components/VersionDialog.vue'
 import { useIsMobile } from './utils/useIsMobile'
 import { changePassword } from './api/user'
 
@@ -97,6 +103,7 @@ const user = ref(savedUser ? JSON.parse(savedUser) : null)
 const isMobile = useIsMobile()
 const activeTab = ref('dashboard')
 const passwordVisible = ref(false)
+const versionVisible = ref(false)
 const passwordForm = reactive({
   oldPassword: '',
   newPassword: ''
@@ -118,6 +125,7 @@ const logout = () => {
 
 const onUserCommand = command => {
   if (command === 'password') passwordVisible.value = true
+  if (command === 'version') versionVisible.value = true
   if (command === 'logout') logout()
 }
 

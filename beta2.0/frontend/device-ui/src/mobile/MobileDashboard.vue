@@ -76,6 +76,7 @@ const loading = ref(false)
 const total = ref(0)
 const byStatus = ref({})
 const byDeviceStatus = ref({})
+const uncalibratedVerification = ref(0)
 const attention = ref([])
 
 const cards = computed(() => [
@@ -85,7 +86,7 @@ const cards = computed(() => [
   { key: 'due_soon', label: '即将到期', value: byStatus.value.due_soon || 0, color: '#d9852b', calibrationStatus: 'due_soon' },
   { key: 'expired', label: '已过期', value: byStatus.value.expired || 0, color: '#d0453e', calibrationStatus: 'expired' },
   { key: 'failed', label: '验证不合格', value: byStatus.value.failed || 0, color: '#8e44ad', calibrationStatus: 'failed' },
-  { key: 'uncalibrated', label: '未验证', value: byStatus.value.uncalibrated || 0, color: '#6b7280', calibrationStatus: 'uncalibrated' }
+  { key: 'uncalibrated', label: '未验证', value: uncalibratedVerification.value, color: '#6b7280', calibrationStatus: 'uncalibrated', calibrationMode: 'calibration_verification' }
 ])
 
 const deviceCards = computed(() => [
@@ -122,6 +123,7 @@ const load = async () => {
     total.value = res.total || 0
     byStatus.value = res.byStatus || {}
     byDeviceStatus.value = res.byDeviceStatus || {}
+    uncalibratedVerification.value = res.uncalibrated_verification || 0
     attention.value = res.attention || []
   } finally {
     loading.value = false

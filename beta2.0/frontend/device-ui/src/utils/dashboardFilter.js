@@ -3,6 +3,7 @@ import { reactive } from 'vue'
 // 设备门户卡片点击后，设备列表据此应用筛选
 export const pendingInstrumentFilter = reactive({
   calibration_status: '',
+  calibration_mode: '',
   status: '',
   ts: 0
 })
@@ -10,6 +11,7 @@ export const pendingInstrumentFilter = reactive({
 // 移动端设备门户卡片点击后，移动设备列表据此应用筛选
 export const pendingMobileFilter = reactive({
   calibration_status: '',
+  calibration_mode: '',
   status: '',
   ts: 0
 })

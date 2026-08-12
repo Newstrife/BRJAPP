@@ -130,6 +130,7 @@ const title = computed(() => ({
 
 const onDashFilter = card => {
   pendingMobileFilter.calibration_status = card.calibrationStatus || ''
+  pendingMobileFilter.calibration_mode = card.calibrationMode || ''
   pendingMobileFilter.status = card.status || ''
   pendingMobileFilter.ts = Date.now()
   tab.value = 'instruments'

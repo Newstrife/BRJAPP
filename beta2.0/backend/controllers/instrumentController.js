@@ -293,13 +293,18 @@ exports.stats = async (req, res) => {
 
     const total = await Instrument.count();
 
+    // “未验证”仅统计校准方式为“计量+验证”的设备
+    const uncalibratedVerification = await Instrument.count({
+      where: { calibration_status: 'uncalibrated', calibration_mode: 'calibration_verification' }
+    });
+
     const attention = await Instrument.findAll({
       where: { calibration_status: { [Op.in]: ['due_soon', 'expired'] } },
       order: [['next_calibration_date', 'ASC']],
       limit: 10
     });
 
-    success(res, { total, byStatus, byDeviceStatus, attention });
+    success(res, { total, byStatus, byDeviceStatus, uncalibrated_verification: uncalibratedVerification, attention });
   } catch (err) {
     fail(res, err.message);
   }

@@ -111,6 +111,7 @@ const filters = reactive({
   location: '',
   department: '',
   calibration_status: '',
+  calibration_mode: '', // 仅由门户卡片跳转带入，不参与界面筛选
   status: ''
 })
 
@@ -120,6 +121,7 @@ const emitQuery = () => {
     location: filters.location,
     department: filters.department,
     calibration_status: filters.calibration_status,
+    calibration_mode: filters.calibration_mode,
     status: filters.status
   })
 }
@@ -128,10 +130,12 @@ let debounceTimer = null
 
 watch(keyword, () => {
   clearTimeout(debounceTimer)
+  filters.calibration_mode = '' // 手动搜索时清除门户带入的校准方式条件
   debounceTimer = setTimeout(emitQuery, 400)
 })
 
 const applyFilters = () => {
+  filters.calibration_mode = '' // 手动筛选时清除门户带入的校准方式条件
   filterVisible.value = false
   emitQuery()
 }
@@ -140,6 +144,7 @@ const resetFilters = () => {
   filters.location = ''
   filters.department = ''
   filters.calibration_status = ''
+  filters.calibration_mode = ''
   filters.status = ''
   filterVisible.value = false
   emitQuery()
@@ -152,6 +157,7 @@ const applyExternalFilter = () => {
   filters.department = ''
   filters.status = pendingMobileFilter.status || ''
   filters.calibration_status = pendingMobileFilter.calibration_status
+  filters.calibration_mode = pendingMobileFilter.calibration_mode || ''
   emitQuery()
 }
 
