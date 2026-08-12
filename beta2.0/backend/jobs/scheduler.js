@@ -19,6 +19,10 @@ const daysUntil = (date) => {
   return Math.ceil((target - today) / 86400000);
 };
 
+// 日期检查只允许在这两个状态间自动调整；
+// 未计量(未验证)、已计量未验证、不合格等业务状态不被到期日期覆盖
+const AUTO_STATUSES = ['normal', 'due_soon'];
+
 const checkCalibrationDates = async () => {
   const reminderDays = await fieldConfig.getReminderDays();
   const list = await Instrument.findAll();
@@ -30,22 +34,25 @@ const checkCalibrationDates = async () => {
     if (item.next_calibration_date) {
       const diff = daysUntil(item.next_calibration_date);
       const reminderDate = dateOnly(item.next_calibration_date);
+      const autoAdjust = AUTO_STATUSES.includes(item.calibration_status);
 
       if (diff < 0) {
-        item.calibration_status = 'expired';
-        item.locked = true;
-        item.lock_reason = '计量超期';
-        await item.save();
+        if (autoAdjust) {
+          item.calibration_status = 'expired';
+          item.locked = true;
+          item.lock_reason = '计量超期';
+          await item.save();
 
-        await audit.record(null, {
-          module: 'instrument',
-          action: 'lock',
-          targetId: item.id,
-          targetLabel,
-          detail: { reason: '计量超期，自动锁定', next_calibration_date: reminderDate }
-        });
+          await audit.record(null, {
+            module: 'instrument',
+            action: 'lock',
+            targetId: item.id,
+            targetLabel,
+            detail: { reason: '计量超期，自动锁定', next_calibration_date: reminderDate }
+          });
+        }
       } else if (diff <= reminderDays) {
-        if (item.calibration_status !== 'due_soon') {
+        if (autoAdjust && item.calibration_status !== 'due_soon') {
           item.calibration_status = 'due_soon';
           await item.save();
         }
