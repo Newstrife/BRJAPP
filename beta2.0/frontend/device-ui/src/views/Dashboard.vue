@@ -122,7 +122,7 @@ const cards = computed(() => [
   { key: 'due_soon', label: '即将到期', value: byStatus.value.due_soon || 0, color: '#d9852b', icon: AlarmClock, calibrationStatus: 'due_soon' },
   { key: 'expired', label: '已过期', value: byStatus.value.expired || 0, color: '#d0453e', icon: WarningFilled, calibrationStatus: 'expired' },
   { key: 'failed', label: '验证不合格', value: byStatus.value.failed || 0, color: '#8e44ad', icon: CircleCloseFilled, calibrationStatus: 'failed' },
-  { key: 'uncalibrated', label: '未验证', value: uncalibratedVerification.value, color: '#6b7280', icon: RemoveFilled, calibrationStatus: 'uncalibrated', calibrationMode: 'calibration_verification' }
+  { key: 'uncalibrated', label: '未验证', value: uncalibratedVerification.value, color: '#6b7280', icon: RemoveFilled, calibrationStatus: '', calibrationMode: 'calibration_verification', verificationResult: 'unverified' }
 ])
 
 const deviceCards = computed(() => [
@@ -179,6 +179,7 @@ const load = async () => {
 const goList = card => {
   pendingInstrumentFilter.calibration_status = card.calibrationStatus || ''
   pendingInstrumentFilter.calibration_mode = card.calibrationMode || ''
+  pendingInstrumentFilter.verification_result = card.verificationResult || ''
   pendingInstrumentFilter.status = card.status || ''
   pendingInstrumentFilter.ts = Date.now()
   emit('go-instruments')

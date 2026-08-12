@@ -112,6 +112,7 @@ const filters = reactive({
   department: '',
   calibration_status: '',
   calibration_mode: '', // 仅由门户卡片跳转带入，不参与界面筛选
+  verification_result: '', // 仅由门户卡片跳转带入，不参与界面筛选
   status: ''
 })
 
@@ -122,6 +123,7 @@ const emitQuery = () => {
     department: filters.department,
     calibration_status: filters.calibration_status,
     calibration_mode: filters.calibration_mode,
+    verification_result: filters.verification_result,
     status: filters.status
   })
 }
@@ -131,11 +133,13 @@ let debounceTimer = null
 watch(keyword, () => {
   clearTimeout(debounceTimer)
   filters.calibration_mode = '' // 手动搜索时清除门户带入的校准方式条件
+  filters.verification_result = '' // 手动搜索时清除门户带入的验证情况条件
   debounceTimer = setTimeout(emitQuery, 400)
 })
 
 const applyFilters = () => {
   filters.calibration_mode = '' // 手动筛选时清除门户带入的校准方式条件
+  filters.verification_result = '' // 手动筛选时清除门户带入的验证情况条件
   filterVisible.value = false
   emitQuery()
 }
@@ -145,6 +149,7 @@ const resetFilters = () => {
   filters.department = ''
   filters.calibration_status = ''
   filters.calibration_mode = ''
+  filters.verification_result = ''
   filters.status = ''
   filterVisible.value = false
   emitQuery()
@@ -158,6 +163,7 @@ const applyExternalFilter = () => {
   filters.status = pendingMobileFilter.status || ''
   filters.calibration_status = pendingMobileFilter.calibration_status
   filters.calibration_mode = pendingMobileFilter.calibration_mode || ''
+  filters.verification_result = pendingMobileFilter.verification_result || ''
   emitQuery()
 }
 

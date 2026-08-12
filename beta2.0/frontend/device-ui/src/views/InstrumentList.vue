@@ -259,7 +259,8 @@ const query = reactive({
   department: '',
   status: '',
   calibration_status: '',
-  calibration_mode: '' // 仅由门户卡片跳转带入，不参与界面筛选
+  calibration_mode: '', // 仅由门户卡片跳转带入，不参与界面筛选
+  verification_result: '' // 仅由门户卡片跳转带入，不参与界面筛选
 })
 const showAdd = ref(false)
 const detailVisible = ref(false)
@@ -340,6 +341,7 @@ const loadData = async () => {
 
 const search = () => {
   query.calibration_mode = '' // 手动查询时清除门户带入的校准方式筛选
+  query.verification_result = '' // 手动查询时清除门户带入的验证情况筛选
   page.value = 1
   loadData()
 }
@@ -353,6 +355,7 @@ const resetQuery = async () => {
   query.status = ''
   query.calibration_status = ''
   query.calibration_mode = ''
+  query.verification_result = ''
   page.value = 1
   await loadData()
 }
@@ -367,6 +370,7 @@ const applyExternalFilter = () => {
   query.status = pendingInstrumentFilter.status || ''
   query.calibration_status = pendingInstrumentFilter.calibration_status
   query.calibration_mode = pendingInstrumentFilter.calibration_mode || ''
+  query.verification_result = pendingInstrumentFilter.verification_result || ''
   page.value = 1
   loadData()
 }

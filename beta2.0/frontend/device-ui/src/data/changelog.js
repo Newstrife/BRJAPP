@@ -1,8 +1,16 @@
 // 应用版本与更新记录，版本信息弹窗（桌面端/移动端）共用
-export const APP_VERSION = 'v2.0.4'
+export const APP_VERSION = 'v2.0.5'
 
 // 按时间倒序排列，最新版本在最前
 export const CHANGELOG = [
+  {
+    version: 'v2.0.5',
+    date: '2026-08-12',
+    changes: [
+      '修复未验证统计口径：改为按“计量+验证且验证情况为未验证”统计，不再依赖计量状态字段',
+      '修复编辑设备后未验证等业务状态被到期日期检测覆盖的问题'
+    ]
+  },
   {
     version: 'v2.0.4',
     date: '2026-08-12',

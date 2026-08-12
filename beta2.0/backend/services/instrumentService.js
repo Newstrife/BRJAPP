@@ -11,6 +11,7 @@ const buildWhere = (query = {}) => {
   if (query.status) where.status = query.status;
   if (query.calibration_status) where.calibration_status = query.calibration_status;
   if (query.calibration_mode) where.calibration_mode = query.calibration_mode;
+  if (query.verification_result) where.verification_result = query.verification_result;
   if (query.usage_notes) where.usage_notes = like(query.usage_notes);
   if (query.location) where.location = like(query.location);
   if (query.department) where.department = like(query.department);

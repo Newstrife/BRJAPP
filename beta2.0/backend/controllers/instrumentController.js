@@ -293,9 +293,14 @@ exports.stats = async (req, res) => {
 
     const total = await Instrument.count();
 
-    // “未验证”仅统计校准方式为“计量+验证”的设备
+    // “未验证”统计校准方式为“计量+验证”且验证情况为“未验证”的设备
+    // （排除“已计量未验证”，避免与其专属卡片重复计数）
     const uncalibratedVerification = await Instrument.count({
-      where: { calibration_status: 'uncalibrated', calibration_mode: 'calibration_verification' }
+      where: {
+        calibration_mode: 'calibration_verification',
+        verification_result: 'unverified',
+        calibration_status: { [Op.ne]: 'calibrated_unverified' }
+      }
     });
 
     const attention = await Instrument.findAll({

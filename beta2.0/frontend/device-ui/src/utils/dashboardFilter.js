@@ -4,6 +4,7 @@ import { reactive } from 'vue'
 export const pendingInstrumentFilter = reactive({
   calibration_status: '',
   calibration_mode: '',
+  verification_result: '',
   status: '',
   ts: 0
 })
@@ -12,6 +13,7 @@ export const pendingInstrumentFilter = reactive({
 export const pendingMobileFilter = reactive({
   calibration_status: '',
   calibration_mode: '',
+  verification_result: '',
   status: '',
   ts: 0
 })
