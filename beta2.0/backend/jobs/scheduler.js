@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const Instrument = require('../models/instrument');
 const wecom = require('../services/wecomService');
 const audit = require('../services/auditService');
+const fieldConfig = require('../services/fieldConfigService');
 
 const dateOnly = (value) => {
   if (!value) return '';
@@ -19,6 +20,7 @@ const daysUntil = (date) => {
 };
 
 const checkCalibrationDates = async () => {
+  const reminderDays = await fieldConfig.getReminderDays();
   const list = await Instrument.findAll();
 
   for (const item of list) {
@@ -42,7 +44,7 @@ const checkCalibrationDates = async () => {
           targetLabel,
           detail: { reason: '计量超期，自动锁定', next_calibration_date: reminderDate }
         });
-      } else if (diff <= 10) {
+      } else if (diff <= reminderDays) {
         if (item.calibration_status !== 'due_soon') {
           item.calibration_status = 'due_soon';
           await item.save();
@@ -59,6 +61,10 @@ const checkCalibrationDates = async () => {
             console.error('企业微信发送失败:', err.message);
           }
         }
+      } else if (item.calibration_status === 'due_soon') {
+        // 日期被延后到提醒窗口之外，恢复正常状态
+        item.calibration_status = 'normal';
+        await item.save();
       }
     }
 
@@ -81,7 +87,7 @@ const checkCalibrationDates = async () => {
             detail: { reason: '验证超期，自动锁定', next_verification_date: reminderDate }
           });
         }
-      } else if (diff <= 10 && item.verification_reminder_for_date !== reminderDate) {
+      } else if (diff <= reminderDays && item.verification_reminder_for_date !== reminderDate) {
         try {
           await wecom.sendMessage(
             `【验证到期提醒】设备名称：${item.name || '-'}，设备编号：${item.code || '-'}，验证到期日期：${reminderDate}，剩余 ${diff} 天，请及时安排验证。`

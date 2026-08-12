@@ -25,6 +25,12 @@
       </el-table-column>
     </el-table>
 
+    <div class="reminder-setting">
+      <span class="reminder-label">到期提醒天数</span>
+      <el-input-number v-model="reminderDays" :min="1" :max="365" size="default" />
+      <span class="tip-inline">下次计量/验证日期在剩余天数内时标记为“即将到期”并发送提醒</span>
+    </div>
+
     <div class="actions">
       <el-button type="primary" :icon="Check" :loading="saving" @click="save">保存</el-button>
       <el-button :icon="Refresh" @click="load">重置</el-button>
@@ -37,9 +43,10 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Check, Refresh } from '@element-plus/icons-vue'
 import { saveFieldConfig } from '../api/fieldConfig'
-import { loadFieldConfig } from '../utils/fieldConfig'
+import { loadFieldConfig, getReminderDays } from '../utils/fieldConfig'
 
 const fields = ref([])
+const reminderDays = ref(10)
 const loading = ref(false)
 const saving = ref(false)
 
@@ -48,6 +55,7 @@ const load = async () => {
   try {
     const data = await loadFieldConfig(true)
     fields.value = data.map(f => ({ ...f }))
+    reminderDays.value = getReminderDays()
   } finally {
     loading.value = false
   }
@@ -57,8 +65,9 @@ const save = async () => {
   saving.value = true
   try {
     const required = fields.value.filter(f => f.required).map(f => f.key)
-    const data = await saveFieldConfig(required)
-    fields.value = (data || []).map(f => ({ ...f }))
+    const data = await saveFieldConfig(required, reminderDays.value)
+    fields.value = (data && data.fields ? data.fields : []).map(f => ({ ...f }))
+    if (data && Number.isInteger(data.reminder_days)) reminderDays.value = data.reminder_days
     await loadFieldConfig(true) // 刷新全局缓存，表单立即应用新规则
     ElMessage.success('已保存')
   } finally {
@@ -79,5 +88,23 @@ onMounted(load)
 
 .actions {
   margin-top: 16px;
+}
+
+.reminder-setting {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reminder-label {
+  font-size: 14px;
+  color: var(--text-main, #333);
+  white-space: nowrap;
+}
+
+.tip-inline {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 </style>

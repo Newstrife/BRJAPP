@@ -1,6 +1,8 @@
 const Setting = require('../models/setting');
 
 const SETTING_KEY = 'instrument_required_fields';
+const REMINDER_DAYS_KEY = 'calibration_reminder_days';
+const DEFAULT_REMINDER_DAYS = 10;
 
 // 可配置必填的字段（下拉枚举字段有默认值，不参与必填配置）
 // fixed: 系统固定必填，不允许关闭（设备编号依赖唯一性校验）
@@ -77,6 +79,34 @@ const saveRequiredFields = async (keys) => {
 const isEmpty = value =>
   value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
 
+// 到期提醒天数（即将到期/提醒的窗口），未配置时默认 10 天
+const getReminderDays = async () => {
+  try {
+    const row = await Setting.findByPk(REMINDER_DAYS_KEY);
+    const days = parseInt(row && row.value, 10);
+    if (Number.isInteger(days) && days >= 1 && days <= 365) return days;
+  } catch (err) {
+    // 配置缺失或损坏时回退默认值
+  }
+  return DEFAULT_REMINDER_DAYS;
+};
+
+const saveReminderDays = async (days) => {
+  const value = parseInt(days, 10);
+  if (!Number.isInteger(value) || value < 1 || value > 365) {
+    throw new Error('提醒天数需为 1-365 之间的整数');
+  }
+
+  const [row] = await Setting.findOrCreate({
+    where: { key: REMINDER_DAYS_KEY },
+    defaults: { value: String(value) }
+  });
+  row.value = String(value);
+  await row.save();
+
+  return value;
+};
+
 // 服务端按配置校验必填字段，返回错误消息（通过时返回 null）
 const validatePayload = async (body) => {
   const required = await getRequiredFields();
@@ -90,5 +120,7 @@ module.exports = {
   getRequiredFields,
   getFieldConfig,
   saveRequiredFields,
+  getReminderDays,
+  saveReminderDays,
   validatePayload
 };

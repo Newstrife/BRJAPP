@@ -59,6 +59,10 @@ exports.create = async (req, res) => {
 
     const instrument = await Instrument.create(buildInstrumentPayload(req.body));
 
+    // 新增后根据计量/验证日期重算状态（即将到期/已过期）
+    await scheduler.checkCalibrationDates();
+    await instrument.reload();
+
     await audit.record(req, {
       module: 'instrument',
       action: 'create',
@@ -92,6 +96,10 @@ exports.update = async (req, res) => {
     const before = device.toJSON();
 
     await device.update(buildInstrumentPayload(req.body));
+
+    // 编辑后根据新的计量/验证日期重算状态（即将到期/已过期）
+    await scheduler.checkCalibrationDates();
+    await device.reload();
 
     await audit.record(req, {
       module: 'instrument',
@@ -326,6 +334,9 @@ exports.importExcel = async (req, res) => {
     }
 
     const created = await Instrument.bulkCreate(rows);
+
+    // 导入后根据计量/验证日期重算状态（即将到期/已过期），否则要等下次定时任务才生效
+    await scheduler.checkCalibrationDates();
 
     await audit.record(req, {
       module: 'instrument',

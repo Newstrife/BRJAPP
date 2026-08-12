@@ -18,7 +18,8 @@ const FALLBACK_REQUIRED = [
 const state = reactive({
   loaded: false,
   loading: null,
-  fields: [] // [{ key, label, required, fixed }]
+  fields: [], // [{ key, label, required, fixed }]
+  reminderDays: 10 // 到期提醒天数
 })
 
 export const loadFieldConfig = async (force = false) => {
@@ -27,7 +28,10 @@ export const loadFieldConfig = async (force = false) => {
   if (!state.loading) {
     state.loading = getFieldConfig()
       .then(data => {
-        state.fields = Array.isArray(data) ? data : []
+        // 兼容两种响应结构：{ fields, reminder_days } 或纯数组
+        const fields = Array.isArray(data) ? data : data && data.fields
+        state.fields = Array.isArray(fields) ? fields : []
+        if (data && Number.isInteger(data.reminder_days)) state.reminderDays = data.reminder_days
         state.loaded = true
       })
       .catch(() => {})
@@ -39,6 +43,8 @@ export const loadFieldConfig = async (force = false) => {
   await state.loading
   return state.fields
 }
+
+export const getReminderDays = () => state.reminderDays
 
 export const isFieldRequired = key => {
   const field = state.fields.find(f => f.key === key)
